@@ -1,0 +1,9 @@
+build/
+dist/
+picture/
+*.egg-info/
+.idea/
+*.png
+*.log
+.DS_Store
+__pycache__/
