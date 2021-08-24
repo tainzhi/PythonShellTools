@@ -104,12 +104,23 @@ export PATH="${HOME}/.local/bin:${HOME}/.python3.9.6/bin:$PATH"
 - Class Names: use CapWords
 - Functions and Variable names: be lowercase, with words separated by underscore as necessary to improve readability
 
-### 遇到问题No module named '_ctypes'
+### 遇到问题
+#### No module named '_ctypes'
 ```bash
 sudo apt install libffi-dev
 
 ```
 然后, 重新再安装python
+
+#### use pip3, No module named 'lsb_release'
+[reference](https://www.pynote.net/archives/592)
+
+寻找Ubunbu自带的Python3使用的 lsb_release 模块，然后将这个模块copy到我们自己编译安装的Python3的lib目录下
+
+```shell
+$ sudo cp /usr/lib/python3/dist-packages/lsb_release.py /usr/local/python-3.7/lib/python3.7/
+```
+
 
 ### [python modules](https://docs.python.org/3/tutorial/modules.html)
 一个文件就是一个module， 文件名就是module名， 
