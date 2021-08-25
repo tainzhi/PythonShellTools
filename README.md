@@ -1,6 +1,8 @@
 # info
 这个仓库包含了我的一些android开发中写的python工具
 
+### genSignedApk
+https://confluence.mot.com/display/BRSSW/App+Bundle
 
 ## install
 ```shell
@@ -41,6 +43,7 @@ pip install pipenv
 ### python shell tool
 - [click](https://rich.readthedocs.io/en/stable/introduction.html)
 - [python prompt](https://python-prompt-toolkit.readthedocs.io/en/latest/pages/asking_for_input.html#history)
+- argparse是python内置的官方库. 支持一个参数一次使用有不定长的输入, 与bash通配符（wildcards）结合起来非常方便；而Click无法支持。
 
 ### 持久化 pickle vs shelve
 [shelve基于pickle， 提供了键值对的操作方式， 更方便](https://stackoverflow.com/questions/4103430/what-is-the-difference-between-pickle-and-shelve)
@@ -48,7 +51,7 @@ pip install pipenv
 ### terminal cli progressbar
 - 推荐用rich, progressbar有多种颜色， 非常漂亮
 - 也可以自己基于`sys.stdout.flush()`来实现
-- tqdm也可以实现， 但是颜色单一。 tqdm作为老牌的Python进度条工具，循环处理、多进程、多线程、递归处理等都是支持的
+- tqdm也可以实现， 但是颜色单一。 tqdm作为老牌的Python进度条工具，循环处理、多进程、多线程、递归处理等都是支持的, 
 [参考](https://www.cnblogs.com/liuzaoqi/p/13041394.html)
   
 ### file文件操作， copy/remove操作
@@ -105,6 +108,9 @@ export PATH="${HOME}/.local/bin:${HOME}/.python3.9.6/bin:$PATH"
 - Functions and Variable names: be lowercase, with words separated by underscore as necessary to improve readability
 
 ### 遇到问题
+####  no module after reinstall
+delete all build cache directories
+
 #### No module named '_ctypes'
 ```bash
 sudo apt install libffi-dev
@@ -132,3 +138,7 @@ $ sudo cp /usr/lib/python3/dist-packages/lsb_release.py /usr/local/python-3.7/li
 
 ### python不推荐使用lambda
 - [参考](https://www.python.org/dev/peps/pep-0008/)
+
+
+### click && setuptools
+- [reference](https://click.palletsprojects.com/en/8.0.x/setuptools/)
