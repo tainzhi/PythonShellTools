@@ -14,7 +14,9 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-t', '--tool', 'bundle_tool', required=False, type=click.Path(),
               help='google bundle tool')
 @click.option('-d', '--device', 'device', required=False,
-              help='需要打包device平台的signed apk')
+              help='''需要打包device平台的signed apk, device可以通过\n
+              adb shell getprop |grep ro.product.device 
+                   ''')
 @click.option('-e', '--key', 'key_store', required=False, type=click.Path(),
               help='key store file'
               )
@@ -24,7 +26,26 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-g', '--gradle', default=False, required=False,
               help="whether to gradle MotCamera:MotCamera:bundleDebug, 1-yes, 0-no")
 def bundle_generate(bundle_tool, device, key_store, output, gradle):
-    """generate signed android bundle apk"""
+    """生成signed bundle apk
+    实现的功能参考： https://confluence.mot.com/display/BRSSW/App+Bundle#AppBundle-Buildingthebundle
+
+    1. 先生成 project/mainModule/build/outputs/bundle/debug/*.aab, \n
+        -g 1 需要生成， 默认 -g 0不生成，使用已经生成的*.aab \n
+        如果有代码修改，必须要重新生成\n
+    2. -d device 确认项目平台， 第一次手动输入后，保存在 ~/.python_shell_tool中 \n
+    3. -e 指定apk的签名位置\n
+    4. -o 指定最终输出的apk所在位置，默认是 ~/Downloads \n
+
+    使用example \n
+    # 执行./gradlew **/bundleDebug生成.aab \n
+    genSignedApk -g 1 \n
+    #生成apk \n
+    genSigendApk -d berlin -t <bundletool-path> -e <keystore-path>
+
+    genSignedApk -g 1 \n
+    # 使用保存在~/.python_shell_tool中 device, bundletool, keystore \n
+    genSignedApk \n
+    """
     db = DB(config.config_path)
     # todo
     # root_dir = os.getcwd()
@@ -49,6 +70,7 @@ def bundle_generate(bundle_tool, device, key_store, output, gradle):
             # todo 通过读取列表， 判断device是否输入正确
         else:
             db.save_device(device)
+        click.secho("生成{}的apk".format(device), fg='blue')
 
         if key_store is None:
             key_store = db.get_key_store()
@@ -111,7 +133,10 @@ def bundle_generate(bundle_tool, device, key_store, output, gradle):
         click.echo("已经生成最终signed bundle apk")
         click.secho(os.path.join(output, target_apk), bg='red', fg='white', bold=True)
     else:
-        ret = subprocess.call('./gradlew MotCamera:bundleDebug')
+        # 不能使用subprocess.call('./gradlew :MotCamera:bundleDebug')， 无法执行命令报错
+        ret = subprocess.call(['./gradlew',
+                               ':MotCamera:bundleDebug',
+                               ])
 
 
 def get_aab(root_dir):

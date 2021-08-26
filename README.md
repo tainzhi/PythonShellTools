@@ -2,7 +2,15 @@
 这个仓库包含了我的一些android开发中写的python工具
 
 ### genSignedApk
-https://confluence.mot.com/display/BRSSW/App+Bundle
+实现的功能参考： https://confluence.mot.com/display/BRSSW/App+Bundle
+
+该module的安装、卸载方法参考如下
+
+具体使用
+```shell
+# 查看使用说明
+genSigendApk -h
+```
 
 ## install
 ```shell
@@ -11,6 +19,7 @@ https://confluence.mot.com/display/BRSSW/App+Bundle
 # brew install python3
 # --user为安装在~用户目录， 具体安装到~/.local/bin/目录下
 # --record 为安装了哪些文件， 方便卸载
+# install后发现没有相关module，那么删除缓存的build文件
 python setup.py install --user --record files.txt
 ```
 为了快速下载python的依赖库, 建议替换成国内库
