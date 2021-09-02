@@ -48,8 +48,8 @@ def bundle_generate(bundle_tool, device, key_store, output, gradle):
     """
     db = DB(config.config_path)
     # todo
-    # root_dir = os.getcwd()
-    root_dir = '/home/FQ1/StudioProjects/MotCamera3'
+    root_dir = os.getcwd()
+    # root_dir = '/home/FQ1/StudioProjects/MotCamera3'
     if not gradle:
         # 1.1 bundle_tool使用默认的， 从配置中读取
         if bundle_tool is None:
@@ -134,9 +134,10 @@ def bundle_generate(bundle_tool, device, key_store, output, gradle):
         click.secho(os.path.join(output, target_apk), bg='red', fg='white', bold=True)
     else:
         # 不能使用subprocess.call('./gradlew :MotCamera:bundleDebug')， 无法执行命令报错
-        ret = subprocess.call(['./gradlew',
-                               ':MotCamera:bundleDebug',
-                               ])
+        if config.os_type == 'Windows':
+            ret = subprocess.call(['.\gradlew.bat', ':MotCamera:bundleDebug', ])
+        else:
+            ret = subprocess.call(['./gradlew', ':MotCamera:bundleDebug', ])
 
 
 def get_aab(root_dir):

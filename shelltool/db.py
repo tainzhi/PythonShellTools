@@ -6,8 +6,9 @@ class DB:
     __d = None
 
     def __init__(self, file_name):
-        __file = file_name
-        self.__d = shelve.open(__file)
+        # __file = file_name
+        __file = ".test"
+        self.__d = shelve.open(__file, "c")
 
     def get_bundle_tool(self):
         # todo

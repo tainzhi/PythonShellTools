@@ -23,7 +23,7 @@ genSigendApk -h
 python setup.py install --user --record files.txt
 ```
 为了快速下载python的依赖库, 建议替换成国内库
-在`~/.pip/pip.conf`中修改为
+在`~/.pip/pip.conf`(在Windows下是`~/.pip/pip.ini`)中修改为
 ```
 [global]
 index-url=http://mirrors.aliyun.com/pypi/simple/
@@ -56,6 +56,16 @@ pip install pipenv
 
 ### 持久化 pickle vs shelve
 [shelve基于pickle， 提供了键值对的操作方式， 更方便](https://stackoverflow.com/questions/4103430/what-is-the-difference-between-pickle-and-shelve)
+
+
+### 关于跨平台
+使用`os.environ`后，linux下的home key为 `HOME`, 而windows下为`HOMEPATH`
+
+怎么确认了？在python shell中
+```python
+>>> import os
+>>> os.environ.key()
+```
 
 ### terminal cli progressbar
 - 推荐用rich, progressbar有多种颜色， 非常漂亮
