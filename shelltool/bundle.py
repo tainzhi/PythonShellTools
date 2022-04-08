@@ -2,7 +2,7 @@ import os
 import click
 import subprocess
 from shelltool import config
-from shelltool.db import DB
+from shelltool.db.bundle_db import BundleDB
 from rich.progress import Progress
 from rich.progress import BarColumn
 

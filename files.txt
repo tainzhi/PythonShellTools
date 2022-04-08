@@ -1,4 +1,7 @@
-/home/FQ1/.local/lib/python3.9/site-packages/python_shell_tool-0.0.1-py3.9.egg
-/home/FQ1/.local/bin/genSignedBundleApk
-/home/FQ1/.local/bin/pygmentize
-/home/FQ1/.local/bin/cmark
+c:\users\qiufq1\scoop\apps\python\3.9.7\lib\site-packages\python_shell_tool-0.0.1-py3.9.egg
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\genSignedApk-script.py
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\genSignedApk.exe
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\pygmentize-script.py
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\pygmentize.exe
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\cmark-script.py
+C:\Users\qiufq1\scoop\apps\python\current\Scripts\cmark.exe

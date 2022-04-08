@@ -1,7 +1,7 @@
 import shelve
 
 
-class DB:
+class BundleDB:
     __file = None
     __d = None
 
