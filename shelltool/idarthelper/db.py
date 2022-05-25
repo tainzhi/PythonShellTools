@@ -1,0 +1,68 @@
+import sqlite3
+
+DB_NAME = 'artifacts.db'
+DB_TABLE_REPO_NAME = 'repos'
+DB_TABLE_RELEASE_NAME = 'release_notes'
+
+
+class SqliteDB:
+    def __init__(self):
+        self.__con = sqlite3.connect(DB_NAME)
+        self.__cur = self.__con.cursor()
+        self.__create()
+
+    def __create(self):
+        # Create table
+        self.__cur.execute('''CREATE TABLE IF NOT EXISTS {} 
+                        (url TEXT PRIMARY KEY,
+                       product TEXT,
+                       version TEXT,
+                       detailed_version TEXT)'''
+                           .format(DB_TABLE_REPO_NAME))
+        self.__cur.execute('''CREATE TABLE IF NOT EXISTS {} 
+                        (url TEXT PRIMARY KEY,
+                        product TEXT,
+                        version TEXT,
+                        detailed_version TEXT,
+                        camera_version TEXT,
+                        build_date TEXT)'''
+                           .format(DB_TABLE_RELEASE_NAME))
+
+    def insert_repo(self, url, name, version, detailed_version):
+        # # fixme remove
+        # print('insert_repo:---' + url)
+        self.__cur.execute("INSERT OR REPLACE INTO {} VALUES (?, ?, ?, ?)".format(DB_TABLE_REPO_NAME),
+                           (url, name, version, detailed_version))
+        # fixme remove commit to performance
+        self.__con.commit()
+
+    def insert_release(self, url, name, version, detailed_version):
+        self.__cur.execute("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
+                           .format(DB_TABLE_RELEASE_NAME), (url, name, version, detailed_version))
+        # fixme remove commit to performance
+        self.__con.commit()
+
+    def get_all_versions_dict(self):
+        # 为啥不从 repos table 获取了
+        # 因为某些版本因为已经很久了, 所以 fastboot_ 刷机包已经删除, 只存在 release_notes.xml
+        # release_notes.xml 更全面一些
+        # self.__con.row_factory = lambda cursor, row: dict(zip(row[0], row[1]))
+        self.__con.row_factory = sqlite3.Row
+        cursor = self.__con.cursor()
+        versions = cursor.execute("SELECT version, product FROM {}".format(DB_TABLE_RELEASE_NAME)).fetchall()
+        return dict((row[0], row[1]) for row in versions)
+
+    def __dict_factory(self, cursor, row):
+        d = {}
+        d.update({row[0] : row[1]})
+        return d
+
+    def get_all_versions_list(self):
+        self.__con.row_factory = lambda cursor, row: row[0]
+        cursor = self.__con.cursor()
+        versions = cursor.execute("SELECT version FROM {}".format(DB_TABLE_RELEASE_NAME)).fetchall()
+        return set(versions)
+
+    def close(self):
+        self.__con.commit()
+        self.__con.close()
