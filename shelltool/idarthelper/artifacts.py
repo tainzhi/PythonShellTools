@@ -10,8 +10,8 @@ DEBUG = True
 EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks', 'banks-cache',
                  'bathena', 'bathena-cache', 'bingo', 'bingo-cache', 'borneo', 'borneo-cache', 'burton', 'burton-cache',
                  'cebu', 'cebu-cache', 'channel', 'channel-cache', 'chef', 'chef-cache', 'continuous_builds', 'continuous_builds-cache',
-                 'cptools', 'cptools-cache', 'cw_virtual_US', 'cw_virtual_US-cache', 'davros_us', 'davros_us-cache', 'deen_32', 'deen_32-cache', 'deen-cache',
-                 'def', 'def-cache', 'doha', 'doha-cache', 'dragon', 'dragon_US', 'dragon_US-cache', 'evert', 'evert-cache', 'felix', 'felix_us', 'felix_US-cache',
+                 'cptools', 'cptools-cache', 'cw_virtual_US', 'cw_virtual_US-cache', 'davros_us', 'davros_us-cache', 'deen', 'deen_32', 'deen_32-cache', 'deen-cache',
+                 'def', 'def-cache', 'doha', 'doha-cache', 'drogon', 'drogon_US', 'drogon_US-cache', 'evert', 'evert-cache', 'felix', 'felix_us', 'felix_US-cache',
                  'fijisc', 'fijisc-cache', 'foles', 'foles-cache', 'ginna', 'ginna-cache', 'gradle-dev', 'gradle-dev_US', 'gradle-dev_US-cache','gradle-release_US', 'gradle-release_US-cache',
                  'guam', 'guam-cache', 'guamna', 'guamna-cache', 'guamp', 'guamp-cache', 'hanoi', 'hanoi-cache', 'hanoip', 'hanoip-cache', 'harpia', 'harpia-cache',
                  'hawao', 'hawao_US', 'heart', 'heart-cache', 'humphrey', 'humphrey-cache', 'ironmn', 'ironma_US', 'ironma_US-cache', 'johnson', 'johson-cache',
@@ -86,6 +86,8 @@ class ArtifactsUpdater:
             # 剔除-cache后缀
             repoKeyWithoutSuffix = item['repoKey']
             cacheIndex = repoKeyWithoutSuffix.find('-cache')
+            # FIXME: remove
+            print('not load:' + item['repoKey'] + '/' + item['path'])
             if cacheIndex != -1:
                 repoKeyWithoutSuffix = repoKeyWithoutSuffix[0:cacheIndex]
             if (item['repoKey'] + '/' + item['path']) in self.__loaded_versions:

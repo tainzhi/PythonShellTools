@@ -34,12 +34,22 @@ class SqliteDB:
         self.__cur.execute("INSERT OR REPLACE INTO {} VALUES (?, ?, ?, ?)".format(DB_TABLE_REPO_NAME),
                            (url, product, version, detailed_version))
         # fixme remove commit to performance
+        # todo buck insert to optimize performance
+        self.__con.commit()
+
+    def bulk_insert_repo(self, repos):
+        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?,?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
 
     def insert_release(self, url, product, version, detailed_version):
         self.__cur.execute("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
                            .format(DB_TABLE_RELEASE_NAME), (url, product, version, detailed_version))
         # fixme remove commit to performance
+        self.__con.commit()
+
+    def bulk_insert_release(self, release_notes):
+        self.__cur.executemany("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
+                           .format(DB_TABLE_RELEASE_NAME), release_notes)
         self.__con.commit()
 
     def get_all_versions_dict(self):
