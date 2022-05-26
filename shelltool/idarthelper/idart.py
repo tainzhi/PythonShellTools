@@ -9,6 +9,10 @@ from artifacts import ArtifactsUpdater
 # FIXME: compatility
 download_dir = r'd:\Downloads'
 DEBUG = True
+KB = 1024
+MB = KB * 1024
+GB = MB * 1024
+
 IS_WIN32 = 'win32' in str(sys.platform).lower()
 
 def get_path_stem(file_path):
@@ -47,39 +51,36 @@ def untar(fname):
     path_stem = get_path_stem(fname)
     # 解压到以去除文件后缀之后的目录作为解压目录
     # 取得无后缀路径
-    if not os.path.exists(path_stem):
-        os.mkdir(path_stem)
+    if os.path.exists(path_stem):
+        print("已经解压好了," + path_stem)
+    else:
+        if not os.path.exists(path_stem):
+            os.mkdir(path_stem)
 
-    try:
-        # todo compatible with linux/mac
-        ret = subprocess.run(["tar", "-xvf", fname, "-C", path_stem], check=True)
-        if ret.returncode == 0:
-            print("untar success")
-        else:
-            print("untar failed")
-    except Exception as e:
-        print(e)
-        return False
+        try:
+            # todo compatible with linux/mac
+            ret = subprocess.run(["tar", "-xvf", fname, "-C", path_stem], check=True)
+            if ret.returncode == 0:
+                print("untar success")
+            else:
+                print("untar failed")
+        except Exception as e:
+            print(e)
+            return False
     open_dir(path_stem)
 
 
 def download_from_url(url, headers=None, dist="idart.zip", payload=None):
-    # try:
-    #     response = urlopen(url).info()
-    #     file_size = int(response.get('Content-Length', -1))
-    #     print(response)
-    # except Exception as e:
-    #     print(e)
-    #     return False
-    # print("file_size:", file_size)
-    if True or not os.path.exists(dist):
+    if os.path.exists(dist):
+        print("已经下载好了:" +dist)
+    else:
         # todo  添加progressbar
         # https://blog.csdn.net/shykevin/article/details/105503594
         # https://rich.readthedocs.io/en/stable/progress.html
         req = requests.get(url, stream=True, headers=headers)
         print("headers:", req.headers)
         file_size = req.headers.get('Content-Length')
-        print("file_size: " , file_size)
+        print("file size: " , convert_file_size(file_size))
         try:
             with(open(dist, 'wb')) as f:
                 for chunk in req.iter_content(chunk_size=1024):
@@ -91,6 +92,21 @@ def download_from_url(url, headers=None, dist="idart.zip", payload=None):
             return False
     print("download success, begin untar")
     untar(dist)
+
+def convert_file_size(file_size):
+    size = int(file_size)
+    if size > GB:
+        size = (float)(file_size) / GB
+        return f"{size:.2f}G"
+    elif size > MB:
+        size = float(file_size) / MB
+        return f"{size:.2f}M"
+    elif size > KB:
+        size = float(file_size) / MB
+        return f"{size:.2f}K"
+    else:
+        return f"{size}B"
+
 
 
 def main(argv):
