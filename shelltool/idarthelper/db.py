@@ -28,17 +28,17 @@ class SqliteDB:
                         build_date TEXT)'''
                            .format(DB_TABLE_RELEASE_NAME))
 
-    def insert_repo(self, url, name, version, detailed_version):
+    def insert_repo(self, url, product, version, detailed_version):
         # # fixme remove
         # print('insert_repo:---' + url)
         self.__cur.execute("INSERT OR REPLACE INTO {} VALUES (?, ?, ?, ?)".format(DB_TABLE_REPO_NAME),
-                           (url, name, version, detailed_version))
+                           (url, product, version, detailed_version))
         # fixme remove commit to performance
         self.__con.commit()
 
-    def insert_release(self, url, name, version, detailed_version):
+    def insert_release(self, url, product, version, detailed_version):
         self.__cur.execute("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
-                           .format(DB_TABLE_RELEASE_NAME), (url, name, version, detailed_version))
+                           .format(DB_TABLE_RELEASE_NAME), (url, product, version, detailed_version))
         # fixme remove commit to performance
         self.__con.commit()
 

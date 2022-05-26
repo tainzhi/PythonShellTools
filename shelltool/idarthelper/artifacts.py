@@ -5,7 +5,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from db import SqliteDB
 
-# todo
+# todo add global DEBUG sign
 DEBUG = True
 EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks', 'banks-cache',
                  'bathena', 'bathena-cache', 'bingo', 'bingo-cache', 'borneo', 'borneo-cache', 'burton', 'burton-cache',
@@ -48,18 +48,14 @@ class ArtifactsUpdater:
             'Host': 'artifacts-bjmirr.mot.com'
         }
 
-        # fimxe remove
-        # for item in self.__loaded_versions:
-        #     print(item)
         self.__requests_root(self.__payload)
-        # print(type(self.__loaded_versions))
-        # fixme   
+        # todo multiple thread support
         # self.__pool = ThreadPoolExecutor(max_workers=10)
 
     def __requests_root(self, payload):
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
-            # fixme optimize notify mesage
+            # todo optimize notify mesage
             print('Connect artifacts site failed!!!')
             print(response.text)
             return
@@ -69,8 +65,6 @@ class ArtifactsUpdater:
                 continue
             # not traverse directories like cypfg-cache, smith-cache
             if 'repoKey' in item and item['repoKey'].find('cache') != -1:
-                # fixme remove
-                print('---ignore exclude cache item["repoKey"]={}, path: {}'.format(item['repoKey'], item['path']))
                 continue
             self.__payload['type'] = 'junction'
             self.__payload['path'] = item['path']
@@ -88,6 +82,12 @@ class ArtifactsUpdater:
             return
         response_json = json.loads(response.text)
         for item in response_json:
+            # 有的 repoKey='austin'下面的子目录中 repoKey='austin_US-cache'
+            # 剔除-cache后缀
+            repoKeyWithoutSuffix = item['repoKey']
+            cacheIndex = repoKeyWithoutSuffix.find('-cache')
+            if cacheIndex != -1:
+                repoKeyWithoutSuffix = repoKeyWithoutSuffix[0:cacheIndex]
             if (item['repoKey'] + '/' + item['path']) in self.__loaded_versions:
                 continue
             if item['path'].find('msi_only') != -1:
@@ -100,21 +100,17 @@ class ArtifactsUpdater:
                 self.__payload['repoType'] = item['repoType']
                 self.__requests(self.__payload, payload['path'])
             else:
-                # fixme remove
-                # if 'repoKey' in item and item['repoKey'].find('cache') != -1:
-                #     print('item["repoKey"]={}'.format(item['repoKey']))
-                # print('item["repoKey"]={}'.format(item['repoKey']))
-                repo_url = HOST + '/' + item['repoKey'] + '/' + item['path']
-                repo_name = item['repoKey']
+                repo_url = HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
+                repo_name = repoKeyWithoutSuffix
                 repo_detailed_version = item['path']
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
                 # to   12/SSL32.9
-                repo_version = item['repoKey'] + '/' + re.search('(.*?/.*?)/.*', item['path'])[1]
+                repo_version = repoKeyWithoutSuffix + '/' + re.search('(.*?/.*?)/.*', item['path'])[1]
                 if re.search('.*ReleaseNotes.html', item['path']) or re.search('msi-side_release_notes.*', item['path']):
                     # fixme remove print
-                    print('repoKey:{}, {}'.format(item['repoKey'], repo_url))
+                    print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
                     self.__db.insert_release(repo_url, repo_name, repo_version, repo_detailed_version)
                 elif re.search('fastboot_' + '.*tar.gz', item['path']):
                     # fixme remove print
-                    print('repoKey:{}, {}'.format(item['repoKey'], repo_url))
+                    print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
                     self.__db.insert_repo(repo_url, repo_name, repo_version, repo_detailed_version)
