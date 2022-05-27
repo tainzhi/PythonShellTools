@@ -1,9 +1,8 @@
 import requests
 import json
-import re
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from db import SqliteDB
+import asyncio
+import re
 
 # todo add global DEBUG sign
 DEBUG = True
@@ -48,11 +47,11 @@ class ArtifactsUpdater:
             'Host': 'artifacts-bjmirr.mot.com'
         }
 
-        self.__requests_root(self.__payload)
-        # todo multiple thread support
-        # self.__pool = ThreadPoolExecutor(max_workers=10)
+        asyncio.run(
+            self.__requests_root(self.__payload)
+        )
 
-    def __requests_root(self, payload):
+    async def __requests_root(self, payload):
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             # todo optimize notify mesage
@@ -60,47 +59,73 @@ class ArtifactsUpdater:
             print(response.text)
             return
         response_json = json.loads(response.text)
+        payloads = []
         for item in response_json:
             if 'repoKey' in item and item['repoKey'] in EXCLUDE_REPOS:
                 continue
             # not traverse directories like cypfg-cache, smith-cache
             if 'repoKey' in item and item['repoKey'].find('cache') != -1:
                 continue
-            self.__payload['type'] = 'junction'
-            self.__payload['path'] = item['path']
-            self.__payload['text'] = item['text']
-            self.__payload['repoKey'] = item['repoKey']
-            self.__payload['repoType'] = item['repoType']
-            self.__requests(self.__payload, item['path'])
+            pl = {}
+            pl['type'] = 'junction'
+            pl['path'] = item['path']
+            pl['text'] = item['text']
+            pl['repoKey'] = item['repoKey']
+            pl['repoType'] = item['repoType']
+            # FIXME: remove 3 lines 
+            if pl['repoKey'] == 'austin':
+            # if pl['repoKey'] == 'lisbon':
+                payloads.append(pl)
+        print(payloads)
+        task_list = []
+        for pl in payloads:
+            task = asyncio.create_task(
+                self.__requests(pl)
+            )
+            task_list.append(task)
+        results = await asyncio.gather(*task_list)
+        for i in results:
+            print(i)
+            self.__db.bulk_insert_repo(i[0])
+            self.__db.bulk_insert_release(i[1])
 
-    def __requests(self, payload, parent_path):
+    async def __requests(self, payload):
+        # FIXME: remove
+        parent_path = payload['path']
+        print("enter _requests, parent_path=" +parent_path)
+        print(payload)
+        repos = []
+        release_notes = []
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
-            # fixme optimize notify mesage
+            # fixme optimize notify message
             print('Connect artifacts site failed!!!')
             print(response.text)
             return
         response_json = json.loads(response.text)
+        payload_list = []
         for item in response_json:
             # 有的 repoKey='austin'下面的子目录中 repoKey='austin_US-cache'
             # 剔除-cache后缀
             repoKeyWithoutSuffix = item['repoKey']
             cacheIndex = repoKeyWithoutSuffix.find('-cache')
-            # FIXME: remove
-            print('not load:' + item['repoKey'] + '/' + item['path'])
+            # FIXME: remove 2 line
+            print('load_versions size={}'.format(len(self.__loaded_versions)))
+            print('not load:' + repoKeyWithoutSuffix + '/' + item['path'])
             if cacheIndex != -1:
                 repoKeyWithoutSuffix = repoKeyWithoutSuffix[0:cacheIndex]
-            if (item['repoKey'] + '/' + item['path']) in self.__loaded_versions:
+            if (repoKeyWithoutSuffix + '/' + item['path']) in self.__loaded_versions:
                 continue
             if item['path'].find('msi_only') != -1:
                 continue
             if parent_path.find('key') == -1:
-                self.__payload['type'] = 'junction'
-                self.__payload['path'] = item['path']
-                self.__payload['text'] = item['text']
-                self.__payload['repoKey'] = item['repoKey']
-                self.__payload['repoType'] = item['repoType']
-                self.__requests(self.__payload, payload['path'])
+                pl = {}
+                pl['type'] = 'junction'
+                pl['path'] = item['path']
+                pl['text'] = item['text']
+                pl['repoKey'] = item['repoKey']
+                pl['repoType'] = item['repoType']
+                payload_list.append(pl)
             else:
                 repo_url = HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
                 repo_name = repoKeyWithoutSuffix
@@ -108,11 +133,27 @@ class ArtifactsUpdater:
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
                 # to   12/SSL32.9
                 repo_version = repoKeyWithoutSuffix + '/' + re.search('(.*?/.*?)/.*', item['path'])[1]
+                # FIXME: remove 
+                print('repo_version:' + repo_version)
+                self.__loaded_versions.add(repo_version)
                 if re.search('.*ReleaseNotes.html', item['path']) or re.search('msi-side_release_notes.*', item['path']):
                     # fixme remove print
-                    print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
-                    self.__db.insert_release(repo_url, repo_name, repo_version, repo_detailed_version)
+                    # print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
+                    # self.__db.insert_release(repo_url, repo_name, repo_version, repo_detailed_version)
+                    release_notes.append((repo_url, repo_name, repo_version, repo_detailed_version))
                 elif re.search('fastboot_' + '.*tar.gz', item['path']):
                     # fixme remove print
-                    print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
-                    self.__db.insert_repo(repo_url, repo_name, repo_version, repo_detailed_version)
+                    # print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
+                    # self.__db.insert_repo(repo_url, repo_name, repo_version, repo_detailed_version)
+                    repos.append((repo_url, repo_name, repo_version, repo_detailed_version))
+        task_list = []
+        for pl in payload_list:
+            task = asyncio.create_task(
+                self.__requests(pl)
+            )
+            task_list.append(task)
+        results = await asyncio.gather(*task_list)
+        for result in results:
+            repos.extend(result[0])
+            release_notes.extend(result[1])
+        return repos, release_notes

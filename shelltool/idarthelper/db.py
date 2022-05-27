@@ -38,6 +38,8 @@ class SqliteDB:
         self.__con.commit()
 
     def bulk_insert_repo(self, repos):
+        print('--db')
+        print(repos)
         self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?,?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
 
@@ -48,6 +50,8 @@ class SqliteDB:
         self.__con.commit()
 
     def bulk_insert_release(self, release_notes):
+        print('---releasenote')
+        print(release_notes)
         self.__cur.executemany("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
                            .format(DB_TABLE_RELEASE_NAME), release_notes)
         self.__con.commit()
