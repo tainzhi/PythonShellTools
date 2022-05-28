@@ -14,11 +14,13 @@ EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro',
                  'fijisc', 'fijisc-cache', 'foles', 'foles-cache', 'ginna', 'ginna-cache', 'gradle-dev', 'gradle-dev_US', 'gradle-dev_US-cache','gradle-release_US', 'gradle-release_US-cache',
                  'guam', 'guam-cache', 'guamna', 'guamna-cache', 'guamp', 'guamp-cache', 'hanoi', 'hanoi-cache', 'hanoip', 'hanoip-cache', 'harpia', 'harpia-cache',
                  'hawao', 'hawao_US', 'heart', 'heart-cache', 'humphrey', 'humphrey-cache', 'ironmn', 'ironma_US', 'ironma_US-cache', 'johnson', 'johson-cache',
+                 'hawaii', 'hawaii_US', 'hawaiip', 'hawaiip_US', 'hawaiipl', 'hawaiipl_US', 'hawaiipll', 'hawaiipll_US',
                  'kane', 'kane-cache', 'kinzie', 'kinzie-cache', 'lake', 'lake-cache', 'lima', 'lima-cache', 'lux', 'lux-cache', 'malta', 'malta-cache',
                  'maltalite', 'maltalite-cache', 'maltalsc', 'maltalsc-cache', 'maui', 'maui_US', 'maui_US-cache', 'messi', 'messi_US', 'messi_US-cache',
                  'minsk', 'minsk-cache', 'modem', 'modem-cache', 'msi', 'msi-cache', 'nairo', 'nairo-cache', 'nio', 'nio-cache', 'ocean', 'ocean-cache',
                  'odessa', 'odessa-cache', 'olson', 'olson-cache', 'parker', 'parker-cache', 'pippen', 'pippen-cache', 'pypi', 'pypi-cache', 'rav', 'rav-cache',
                  'river', 'river-cache', 'sandbox-eit_mbg', 'sandbox-eit_us', 'sandbox-eit_us-cache', 'scratch', 'surfna', 'surfna-cache', 'stability',
+                 'sofiar', 'sofiar-cache',
                  'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache', 'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
                  }
 HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
@@ -35,12 +37,12 @@ class ArtifactsUpdater:
         self.__url = url
         self.__cookie = cookie
         self.__payload = {'type': 'root',
-                         'path': '',
-                         'repoType': 'remote',
-                         'repoKey': 'key',
-                         'text': 'text',
-                         'trashcan': 'false',
-                         }
+                          'path': '',
+                          'repoType': 'remote',
+                          'repoKey': 'key',
+                          'text': 'text',
+                          'trashcan': 'false',
+                          }
         self.__headers = {
             'Content-Type': 'application/json',
             'Cookie': self.__cookie,
@@ -72,11 +74,7 @@ class ArtifactsUpdater:
             pl['text'] = item['text']
             pl['repoKey'] = item['repoKey']
             pl['repoType'] = item['repoType']
-            # FIXME: remove 3 lines 
-            if pl['repoKey'] == 'austin':
-            # if pl['repoKey'] == 'lisbon':
-                payloads.append(pl)
-        print(payloads)
+            payloads.append(pl)
         task_list = []
         for pl in payloads:
             task = asyncio.create_task(
@@ -105,6 +103,13 @@ class ArtifactsUpdater:
         response_json = json.loads(response.text)
         payload_list = []
         for item in response_json:
+            # 1. 过滤掉android 10, 11
+            if item['path'].find('10') == 0 or item['path'].find('11') == 0:
+                continue
+            # 2. 过滤掉 hawaiip_US 下 files/..., rhodep_US 下 S1SU32_rhodep-g_userdebug_mr_r-qsm2021_test-keys_continuous_gc/367
+            #    从开始index = 0搜索match
+            if not re.match('\d\d.*', item['path']):
+                continue
             # 有的 repoKey='austin'下面的子目录中 repoKey='austin_US-cache'
             # 剔除-cache后缀
             repoKeyWithoutSuffix = item['repoKey']
