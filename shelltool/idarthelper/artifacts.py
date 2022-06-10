@@ -1,3 +1,5 @@
+import os.path
+
 import requests
 import json
 from db import SqliteDB
@@ -6,28 +8,37 @@ import re
 
 # todo add global DEBUG sign
 DEBUG = True
-EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks', 'banks-cache',
+EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks',
+                 'banks-cache',
                  'bathena', 'bathena-cache', 'bingo', 'bingo-cache', 'borneo', 'borneo-cache', 'burton', 'burton-cache',
-                 'cebu', 'cebu-cache', 'channel', 'channel-cache', 'chef', 'chef-cache', 'continuous_builds', 'continuous_builds-cache',
-                 'cptools', 'cptools-cache', 'cw_virtual_US', 'cw_virtual_US-cache', 'davros_us', 'davros_us-cache', 'deen', 'deen_32', 'deen_32-cache', 'deen-cache',
-                 'def', 'def-cache', 'doha', 'doha-cache', 'drogon', 'drogon_US', 'drogon_US-cache', 'evert', 'evert-cache', 'felix', 'felix_us', 'felix_US-cache',
-                 'fijisc', 'fijisc-cache', 'foles', 'foles-cache', 'ginna', 'ginna-cache', 'gradle-dev', 'gradle-dev_US', 'gradle-dev_US-cache','gradle-release_US', 'gradle-release_US-cache',
-                 'guam', 'guam-cache', 'guamna', 'guamna-cache', 'guamp', 'guamp-cache', 'hanoi', 'hanoi-cache', 'hanoip', 'hanoip-cache', 'harpia', 'harpia-cache',
-                 'hawao', 'hawao_US', 'heart', 'heart-cache', 'humphrey', 'humphrey-cache', 'ironmn', 'ironma_US', 'ironma_US-cache', 'johnson', 'johson-cache',
+                 'cebu', 'cebu-cache', 'channel', 'channel-cache', 'chef', 'chef-cache', 'continuous_builds',
+                 'continuous_builds-cache',
+                 'cptools', 'cptools-cache', 'cw_virtual_US', 'cw_virtual_US-cache', 'davros_us', 'davros_us-cache',
+                 'deen', 'deen_32', 'deen_32-cache', 'deen-cache',
+                 'def', 'def-cache', 'doha', 'doha-cache', 'drogon', 'drogon_US', 'drogon_US-cache', 'evert',
+                 'evert-cache', 'felix', 'felix_us', 'felix_US-cache',
+                 'fijisc', 'fijisc-cache', 'foles', 'foles-cache', 'ginna', 'ginna-cache', 'gradle-dev',
+                 'gradle-dev_US', 'gradle-dev_US-cache', 'gradle-release_US', 'gradle-release_US-cache',
+                 'guam', 'guam-cache', 'guamna', 'guamna-cache', 'guamp', 'guamp-cache', 'hanoi', 'hanoi-cache',
+                 'hanoip', 'hanoip-cache', 'harpia', 'harpia-cache',
+                 'hawao', 'hawao_US', 'heart', 'heart-cache', 'humphrey', 'humphrey-cache', 'ironmn', 'ironma_US',
+                 'ironma_US-cache', 'johnson', 'johson-cache',
                  'hawaii', 'hawaii_US', 'hawaiip', 'hawaiip_US', 'hawaiipl', 'hawaiipl_US', 'hawaiipll', 'hawaiipll_US',
-                 'kane', 'kane-cache', 'kinzie', 'kinzie-cache', 'lake', 'lake-cache', 'lima', 'lima-cache', 'lux', 'lux-cache', 'malta', 'malta-cache',
-                 'maltalite', 'maltalite-cache', 'maltalsc', 'maltalsc-cache', 'maui', 'maui_US', 'maui_US-cache', 'messi', 'messi_US', 'messi_US-cache',
-                 'minsk', 'minsk-cache', 'modem', 'modem-cache', 'msi', 'msi-cache', 'nairo', 'nairo-cache', 'nio', 'nio-cache', 'ocean', 'ocean-cache',
-                 'odessa', 'odessa-cache', 'olson', 'olson-cache', 'parker', 'parker-cache', 'pippen', 'pippen-cache', 'pypi', 'pypi-cache', 'rav', 'rav-cache',
-                 'river', 'river-cache', 'sandbox-eit_mbg', 'sandbox-eit_us', 'sandbox-eit_us-cache', 'scratch', 'surfna', 'surfna-cache', 'stability',
+                 'kane', 'kane-cache', 'kinzie', 'kinzie-cache', 'lake', 'lake-cache', 'lima', 'lima-cache', 'lux',
+                 'lux-cache', 'malta', 'malta-cache',
+                 'maltalite', 'maltalite-cache', 'maltalsc', 'maltalsc-cache', 'maui', 'maui_US', 'maui_US-cache',
+                 'messi', 'messi_US', 'messi_US-cache',
+                 'minsk', 'minsk-cache', 'modem', 'modem-cache', 'msi', 'msi-cache', 'nairo', 'nairo-cache', 'nio',
+                 'nio-cache', 'ocean', 'ocean-cache',
+                 'odessa', 'odessa-cache', 'olson', 'olson-cache', 'parker', 'parker-cache', 'pippen', 'pippen-cache',
+                 'pypi', 'pypi-cache', 'rav', 'rav-cache',
+                 'river', 'river-cache', 'sandbox-eit_mbg', 'sandbox-eit_us', 'sandbox-eit_us-cache', 'scratch',
+                 'surfna', 'surfna-cache', 'stability',
                  'sofiar', 'sofiar-cache',
-                 'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache', 'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
+                 'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache',
+                 'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
                  }
 HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
-
-class ArtifactsDb:
-    def __init__(self):
-        pass
 
 
 class ArtifactsUpdater:
@@ -68,12 +79,8 @@ class ArtifactsUpdater:
             # not traverse directories like cypfg-cache, smith-cache
             if 'repoKey' in item and item['repoKey'].find('cache') != -1:
                 continue
-            pl = {}
-            pl['type'] = 'junction'
-            pl['path'] = item['path']
-            pl['text'] = item['text']
-            pl['repoKey'] = item['repoKey']
-            pl['repoType'] = item['repoType']
+            pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
+                  'repoType': item['repoType']}
             payloads.append(pl)
         task_list = []
         for pl in payloads:
@@ -83,15 +90,15 @@ class ArtifactsUpdater:
             task_list.append(task)
         results = await asyncio.gather(*task_list)
         for i in results:
-            print(i)
+            ## FIXME: add to log
+            ## print(i)
             self.__db.bulk_insert_repo(i[0])
             self.__db.bulk_insert_release(i[1])
 
     async def __requests(self, payload):
-        # FIXME: remove
         parent_path = payload['path']
-        print("enter _requests, parent_path=" +parent_path)
-        print(payload)
+        # FIXME: add to logging
+        print("enter: " + parent_path)
         repos = []
         release_notes = []
         response = requests.post(self.__url, headers=self.__headers, json=payload)
@@ -114,9 +121,6 @@ class ArtifactsUpdater:
             # 剔除-cache后缀
             repoKeyWithoutSuffix = item['repoKey']
             cacheIndex = repoKeyWithoutSuffix.find('-cache')
-            # FIXME: remove 2 line
-            print('load_versions size={}'.format(len(self.__loaded_versions)))
-            print('not load:' + repoKeyWithoutSuffix + '/' + item['path'])
             if cacheIndex != -1:
                 repoKeyWithoutSuffix = repoKeyWithoutSuffix[0:cacheIndex]
             if (repoKeyWithoutSuffix + '/' + item['path']) in self.__loaded_versions:
@@ -124,12 +128,8 @@ class ArtifactsUpdater:
             if item['path'].find('msi_only') != -1:
                 continue
             if parent_path.find('key') == -1:
-                pl = {}
-                pl['type'] = 'junction'
-                pl['path'] = item['path']
-                pl['text'] = item['text']
-                pl['repoKey'] = item['repoKey']
-                pl['repoType'] = item['repoType']
+                pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
+                      'repoType': item['repoType']}
                 payload_list.append(pl)
             else:
                 repo_url = HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
@@ -138,18 +138,10 @@ class ArtifactsUpdater:
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
                 # to   12/SSL32.9
                 repo_version = repoKeyWithoutSuffix + '/' + re.search('(.*?/.*?)/.*', item['path'])[1]
-                # FIXME: remove 
-                print('repo_version:' + repo_version)
-                self.__loaded_versions.add(repo_version)
-                if re.search('.*ReleaseNotes.html', item['path']) or re.search('msi-side_release_notes.*', item['path']):
-                    # fixme remove print
-                    # print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
-                    # self.__db.insert_release(repo_url, repo_name, repo_version, repo_detailed_version)
+                if re.search('.*ReleaseNotes.html', item['path']) or re.search('msi-side_release_notes.*',
+                                                                               item['path']):
                     release_notes.append((repo_url, repo_name, repo_version, repo_detailed_version))
                 elif re.search('fastboot_' + '.*tar.gz', item['path']):
-                    # fixme remove print
-                    # print('repoKey:{}, {}'.format(repoKeyWithoutSuffix, repo_url))
-                    # self.__db.insert_repo(repo_url, repo_name, repo_version, repo_detailed_version)
                     repos.append((repo_url, repo_name, repo_version, repo_detailed_version))
         task_list = []
         for pl in payload_list:

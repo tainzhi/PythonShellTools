@@ -1,6 +1,10 @@
 import sqlite3
+import os
 
 DB_NAME = 'artifacts.db'
+# TODO: use global user directory
+base_path = os.path.abspath(os.path.dirname(__file__))
+DB_NAME = os.path.join(base_path, DB_NAME)
 DB_TABLE_REPO_NAME = 'repos'
 DB_TABLE_RELEASE_NAME = 'release_notes'
 
@@ -36,6 +40,11 @@ class SqliteDB:
     def bulk_insert_repo(self, repos):
         self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?,?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
+
+    def get_all_repo_urls(self):
+        self.__con.row_factory = lambda cursor, row: row[0]
+        cursor = self.__con.cursor()
+        return cursor.execute('SELECT url FROM {}'.format(DB_TABLE_REPO_NAME)).fetchall()
 
     def insert_release(self, url, product, version, detailed_version):
         self.__cur.execute("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
