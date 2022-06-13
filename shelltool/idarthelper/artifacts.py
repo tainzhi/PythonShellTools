@@ -42,7 +42,7 @@ HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
 
 
 class ArtifactsUpdater:
-    def __init__(self, url, cookie):
+    def __init__(self, url: str, cookie: str):
         self.__db = SqliteDB()
         self.__loaded_versions = self.__db.get_all_versions_list()
         self.__url = url
@@ -64,7 +64,7 @@ class ArtifactsUpdater:
             self.__requests_root(self.__payload)
         )
 
-    async def __requests_root(self, payload):
+    async def __requests_root(self, payload: dict):
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             # todo optimize notify mesage
@@ -95,7 +95,7 @@ class ArtifactsUpdater:
             self.__db.bulk_insert_repo(i[0])
             self.__db.bulk_insert_release(i[1])
 
-    async def __requests(self, payload):
+    async def __requests(self, payload: dict):
         parent_path = payload['path']
         # FIXME: add to logging
         print("enter: " + parent_path)

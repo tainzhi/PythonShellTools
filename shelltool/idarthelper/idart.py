@@ -15,6 +15,7 @@ GB = MB * 1024
 
 IS_WIN32 = 'win32' in str(sys.platform).lower()
 
+
 def get_path_stem(file_path):
     if file_path.find('.tar.') != -1:
         tar_path = os.path.splitext(file_path)[0]
@@ -41,7 +42,7 @@ def open_dir(dir_path):
         pass
 
 
-def untar(fname):
+def untar(fname: str):
     """
     解压tar.gz文件
     :param fname: 压缩文件名
@@ -72,7 +73,7 @@ def untar(fname):
 
 def download_from_url(url, headers=None, dist="idart.zip", payload=None):
     if os.path.exists(dist):
-        print("已经下载好了:" +dist)
+        print("已经下载好了:" + dist)
     else:
         # todo  添加progressbar
         # https://blog.csdn.net/shykevin/article/details/105503594
@@ -80,7 +81,7 @@ def download_from_url(url, headers=None, dist="idart.zip", payload=None):
         req = requests.get(url, stream=True, headers=headers)
         print("headers:", req.headers)
         file_size = req.headers.get('Content-Length')
-        print("file size: " , convert_file_size(file_size))
+        print("file size: ", convert_file_size(file_size))
         try:
             with(open(dist, 'wb')) as f:
                 for chunk in req.iter_content(chunk_size=1024):
@@ -93,7 +94,8 @@ def download_from_url(url, headers=None, dist="idart.zip", payload=None):
     print("download success, begin untar")
     untar(dist)
 
-def convert_file_size(file_size):
+
+def convert_file_size(file_size: str):
     size = int(file_size)
     if size > GB:
         size = (float)(file_size) / GB
@@ -106,7 +108,6 @@ def convert_file_size(file_size):
         return f"{size:.2f}K"
     else:
         return f"{size}B"
-
 
 
 def main(argv):
@@ -151,8 +152,9 @@ def main(argv):
         url = url_json['url']
         cookie = url_json['cookie']
         artifacts = ArtifactsUpdater(url, cookie)
-        
+
     os.system("pause")
+
 
 if __name__ == '__main__':
     print(sys.argv[1])
