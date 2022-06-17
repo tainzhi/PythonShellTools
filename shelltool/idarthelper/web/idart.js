@@ -101,81 +101,88 @@
             let version=''
             let dist=''
             let android_version=''
+            let detailed_fastboot_version = ''
+            let parse_from_tag = ''
             // 找到的product是类似这样的, Milan (milan)
             // 需要过滤出 () 中的
             const element_product=$('#customfield_18027-val').text()
             if (element_product) {
                 const pf = new RegExp('\\((.*)\\)').exec(element_product)
-                if (pf.length > 1) {
+                if (pf && pf.length > 1) {
                     product = pf[1]
                 }
             }
+
+            // 主要思想是Build Fingerprint, SW Version 和 Description 中任意一个标签存在
+            // 正则过滤出详细的刷机包信息, 然后再分别过滤出版本, fingerprint等等
+            // 
             // https://idart.mot.com/browse/IKSWS-119082
             // Build Fingerprint: motorola/eqs_cn/eqs:12/SSQ32.59/e9c75-a5f84:userdebug/intcfg,test-keys
             // 中的 e9c75-a5f84
             const element_build_fingerprint=$('#customfield_14827-val').text()
             if (element_build_fingerprint) {
-                const pf = new RegExp('(\\w{5}-\\w{5})').exec(element_build_fingerprint)
-                if (pf && pf.length > 1) {
-                    finger = pf[1]
-                }
-                const vera = new RegExp('[\\s/](\\w{1,}\\..*?)[\\s/]').exec(element_build_fingerprint)
-                if (vera && vera.length > 1) {
-                    version = vera[1]
-                }
-                const a_vera = new RegExp('[/\\s:](\\d{2})[\\s/]').exec(element_build_fingerprint)
-                if (a_vera && a_vera.length > 1) {
-                    android_version = a_vera[1]
-                }
-                const di = new RegExp('[/](\\w{1,}_cn)[/]').exec(element_build_fingerprint)
-                if (di && di.length > 1) {
-                    dist = di[1]
-                }
-            }
-            // https://idart.mot.com/browse/IKSWS-119082
-            // SW Version:eqs_cn-userdebug 12 SSQ32.59 e9c75-a5f84 intcfg,test-keys
-            // 找到类似 eqs_cn-userdebug 12 SSQ32.59 e9c75-a5f84 intcfg,test-keys
-            const element_sw_version=$('#customfield_10157-val').text()
-            if (element_sw_version) {
-                const pf = new RegExp('([a-z0-9]{]5}-[a-z0-9]{]5})').exec(element_sw_version)
-                // 找到 e9c75-a5f84
-                if (pf && pf.length > 1) {
-                    finger = pf[1]
-                }
-                // 中的 SSQ32.59
-                const vera = new RegExp('[\\s/](\\w{1,}\\..*?)[\\s/]').exec(element_sw_version)
-                if (vera && vera.length > 1) {
-                    version = vera[1]
-                }
-                // 找到 12
-                const a_vera = new RegExp('[/\\s:](\\d{2})[\\s/]').exec(element_sw_version)
-                if (a_vera && a_vera.length > 1) {
-                    android_version = a_vera[1]
+                detailed_fastboot_version = element_build_fingerprint
+                parse_from_tag = element_build_fingerprint
+            } else {
+                // https://idart.mot.com/browse/IKSWS-119082
+                // SW Version:eqs_cn-userdebug 12 SSQ32.59 e9c75-a5f84 intcfg,test-keys
+                // 找到类似 eqs_cn-userdebug 12 SSQ32.59 e9c75-a5f84 intcfg,test-keys
+                const element_sw_version=$('#customfield_10157-val').text()
+                if (element_sw_version) {
+                    detailed_fastboot_version = element_sw_version
+                    parse_from_tag = element_sw_version
+                } else {
+                    // https://idart.mot.com/browse/IKSWS-118390  OS/SWBuild:oneli_cn-userdebug 12 SSL32.54
+                    // https://idart.mot.com/browse/IKSWS-42920   OS/SWBuild: rhodep_g_userdebug_12_S1SU32.11_ea7314-ca6cc4_intcfg-test-keys_global_US
+                    // https://idart.mot.com/browse/IKSWS-122553  OS/SW Build: eqs_g_userdebug_12_S3SQ32.3_a60fc-d00bf_intcfg-test-keys_global_US
+                    // https://idart.mot.com/browse/IKSWS-110929  Build: motorola/smith_retail/smith:12/S2PS32.52/af3ed2-62871:userdebug/intcfg,test-keys
+                    // https://idart.mot.com/browse/IKSWS-114442  SW version:motorola/tundra_cn/tundra:12/SSJ32.56/eb623-236c3:user/release-keys
+                    const user_content=$('.user-content-block').text()
+                    if (user_content) {
+                        const bu = new RegExp('(OS/SW\\s?Build:|Build|SW version:|motorola)(.*)').exec(user_content)
+                        if (bu && bu.length > 2) {
+                            detailed_fastboot_version = bu[2]
+                            parse_from_tag = bu[2]
+                        }
+                    }
                 }
             }
+
+            const pf = new RegExp('([a-z0-9]{5,}-[a-z0-9]{5,})').exec(detailed_fastboot_version)
+            // 找到 e9c75-a5f84
+            if (pf && pf.length > 1) {
+                finger = pf[1]
+            }
+            // https://idart.mot.com/browse/IKSWS-39920 OS/SWBuild: [motorola/hiphi_g/hiphi:12/S1SH32.21-10/b879b-cd136:user/release-keys]
+            // https://idart.mot.com/browse/IKMMINTG-39536 12_S3SG32.5:userdebug
+            // 过滤出 S3SG32.5 或者有-的S1SH32.21-10, ()中间用 | 分割
+            const vera = new RegExp('[\\s_/]([a-z0-9A-Z]{1,}?\\.[a-z0-9A-Z]{1,}?|[a-z0-9A-Z]{1,}?\\.[a-z0-9A-Z]{1,}?-[0-9]{1,})[\\s_/\\n:]+').exec(detailed_fastboot_version)
+            if (vera && vera.length > 1) {
+                version = vera[1]
+            }
+
+            // 过滤出 11/12/13
+            const a_vera = new RegExp('[\\s_/:](\\d{2})[\\s_/]').exec(detailed_fastboot_version)
+            if (a_vera && a_vera.length > 1) {
+                android_version = a_vera[1]
+            }
+
             // https://idart.mot.com/browse/IKSWS-118390  OS/SWBuild:oneli_cn-userdebug 12 SSL32.54
-            // https://idart.mot.com/browse/IKSWS-42920   OS/SWBuild: rhodep_g_userdebug_12_S1SU32.11_ea7314-ca6cc4_intcfg-test-keys_global_US
-            const os_sw_build=$('.user-content-block').text()
-            if (os_sw_build) {
-                const vera = new RegExp('OS/SWBuild:.*[\\s_](\\w{1,}\\.\\w{1,})[\\s_]').exec(os_sw_build)
-                if (vera && vera.length > 1) {
-                    version = vera[1]
-                }
-                const a_vera = new RegExp('OS/SWBuild:.*[\\s_](\\d{2})[\\s_]').exec(os_sw_build)
-                if (a_vera && a_vera.length > 1) {
-                    android_version = a_vera[1]
-                }
-                const di = new RegExp('[:/\\-](\\w{1,}_cn)[:/\\-]').exec(element_build_fingerprint)
-                if (di && di.length > 1) {
-                    dist = di[1]
-                }
+            // https://idart.mot.com/browse/IKSWS-122553  OS/SW Build: eqs_g_userdebug_12_S3SQ32.3_a60fc-d00bf_intcfg-test-keys_global_US
+            // https://idart.mot.com/browse/IKSWS-110929  Build: motorola/smith_retail/smith:12/S2PS32.52/af3ed2-62871:userdebug/intcfg,test-keys
+            // 要过滤出 oneli_cn 或者 eqs_s 或者 smith_retail
+            const di = new RegExp('[\\s/\\-/:]+(\\w{1,}_cn|\\w{1,}_g|\\w{1,}_retail)[:/\\-_]+').exec(detailed_fastboot_version)
+            if (di && di.length > 1) {
+                dist = di[1]
             }
+
             const url_json = {
                 "url": location.href,
                 "product": product,
                 "dist": dist,
                 "android_version": android_version,
                 "version": version,
+                "parse_from": parse_from_tag,
                 "finger": finger
             }
 
@@ -328,6 +335,9 @@
         }
     }
 
+    // 根据当前进入的网站进入不同的功能实现
+    // idart.mot.com 添加图标, 点击实现下载等功能
+    // mmibug2go.appspot.com 自动点击当前的登录图标, 自动登录后, 下载 bug2go
     if (web_url.indexOf('idart.mot.com') != -1) {
         idart();
     } else if (web_url.indexOf('mmibug2go.appspot.com') != -1) {
