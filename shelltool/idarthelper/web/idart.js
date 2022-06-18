@@ -5,6 +5,7 @@
 // @description  idart 工具, 下载附件, 下载 bug2go, 下载 fastboot 刷机包
 // @match        https://idart.mot.com/browse/*
 // @match        https://mmibug2go.appspot.com/*
+// @match        https://artifacts-bjmirr.mot.com/artifactory/*
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @grant        GM_log
@@ -76,8 +77,8 @@
             if (attachments.length == 0) {
                 alert('no attachments')
             } else {
-
-                const id = new RegExp('browse/(.*$)').exec(window.location.href)[1]
+                const id_re = /browse\/(.*$)/
+                const id = window.location.href.match(id_re)[1]
                 // 获取附件下载地址
                 const download_url = 'https://' + window.location.host + $('#aszip').attr('href')
                 // 生成json
@@ -107,8 +108,10 @@
             // 需要过滤出 () 中的
             const element_product=$('#customfield_18027-val').text()
             if (element_product) {
-                const pf = new RegExp('\\((.*)\\)').exec(element_product)
-                if (pf && pf.length > 1) {
+                // Milan (milan) -> milan
+                const pf_re = /\((.*)\)/
+                const pf = element_product.match(pf_re)
+                if (pf) {
                     product = pf[1]
                 }
             }
@@ -139,8 +142,9 @@
                     // https://idart.mot.com/browse/IKSWS-114442  SW version:motorola/tundra_cn/tundra:12/SSJ32.56/eb623-236c3:user/release-keys
                     const user_content=$('.user-content-block').text()
                     if (user_content) {
-                        const bu = new RegExp('(OS/SW\\s?Build:|Build|SW version:|motorola)(.*)').exec(user_content)
-                        if (bu && bu.length > 2) {
+                        const bu_re = /(OS\/SW\s?Build:|Build:\s*|SW version:\s*|motorola)(.*)/
+                        const bu = user_content.match(bu_re) 
+                        if (bu) {
                             detailed_fastboot_version = bu[2]
                             parse_from_tag = bu[2]
                         }
@@ -148,22 +152,25 @@
                 }
             }
 
-            const pf = new RegExp('([a-z0-9]{5,}-[a-z0-9]{5,})').exec(detailed_fastboot_version)
+            const pf_re = /[a-z0-9]{5,}-[a-z0-9]{5,}/
+            const pf = detailed_fastboot_version.match(pf_re)
             // 找到 e9c75-a5f84
-            if (pf && pf.length > 1) {
+            if (pf) {
                 finger = pf[1]
             }
             // https://idart.mot.com/browse/IKSWS-39920 OS/SWBuild: [motorola/hiphi_g/hiphi:12/S1SH32.21-10/b879b-cd136:user/release-keys]
             // https://idart.mot.com/browse/IKMMINTG-39536 12_S3SG32.5:userdebug
-            // 过滤出 S3SG32.5 或者有-的S1SH32.21-10, ()中间用 | 分割
-            const vera = new RegExp('[\\s_/]([a-z0-9A-Z]{1,}?\\.[a-z0-9A-Z]{1,}?|[a-z0-9A-Z]{1,}?\\.[a-z0-9A-Z]{1,}?-[0-9]{1,})[\\s_/\\n:]+').exec(detailed_fastboot_version)
-            if (vera && vera.length > 1) {
+            // 过滤出 S3SG32.5 或者有-的S1SH32.21-10
+            const vera_re = /[\s_\/]([a-z0-9A-Z]+?\.[a-z0-9A-Z\-]+?)[_\/:\s]?/
+            const vera = detailed_fastboot_version.match(vera_re)
+            if (vera) {
                 version = vera[1]
             }
 
             // 过滤出 11/12/13
-            const a_vera = new RegExp('[\\s_/:](\\d{2})[\\s_/]').exec(detailed_fastboot_version)
-            if (a_vera && a_vera.length > 1) {
+            const a_vera_re = /[\s_\/:](\d{2})[\s_\/]/
+            const a_vera = detailed_fastboot_version.match(a_vera_re)
+            if (a_vera) {
                 android_version = a_vera[1]
             }
 
@@ -171,8 +178,9 @@
             // https://idart.mot.com/browse/IKSWS-122553  OS/SW Build: eqs_g_userdebug_12_S3SQ32.3_a60fc-d00bf_intcfg-test-keys_global_US
             // https://idart.mot.com/browse/IKSWS-110929  Build: motorola/smith_retail/smith:12/S2PS32.52/af3ed2-62871:userdebug/intcfg,test-keys
             // 要过滤出 oneli_cn 或者 eqs_s 或者 smith_retail
-            const di = new RegExp('[\\s/\\-/:]+(\\w{1,}_cn|\\w{1,}_g|\\w{1,}_retail)[:/\\-_]+').exec(detailed_fastboot_version)
-            if (di && di.length > 1) {
+            const di_re = /[\s\/\-:]+(\w+_cn|\w+_g|\w+_retail)[:\/\-_]/
+            const di = detailed_fastboot_version.match(di_re)
+            if (di) {
                 dist = di[1]
             }
 

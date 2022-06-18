@@ -2,7 +2,6 @@ import os
 import sys
 import requests
 import json
-from urllib.request import urlopen
 import subprocess
 from artifacts import ArtifactsUpdater
 
@@ -115,7 +114,7 @@ def main(argv):
     从chrome registry穿过来的参数只有一个, url编码后的json字符串
     """
     # idart://idart//%7B%22url/
-    # idart://bug2go//%7B%22url/
+    # idart://artifacts//%7B%22url/
     argv_list = argv[0].split('//')
     type_download = argv_list[-2]
     encoded_url_json_string = argv_list[-1]
@@ -124,6 +123,7 @@ def main(argv):
     # 而且还需要取出末尾的反斜杠 /
     url_json_string = requests.utils.unquote(encoded_url_json_string).strip('/')
     print(url_json_string)
+    # download idart attachment
     if type_download == 'idart':
         # 解析json字符串
         url_json = json.loads(url_json_string)
@@ -138,6 +138,7 @@ def main(argv):
 
         # 下载文件
         download_from_url(url, headers=headers, dist=os.path.join(download_dir, id + '.zip'))
+    # download logs from bug2go site
     elif type_download == 'bug2go':
         # 解析json字符串
         url_json = json.loads(url_json_string)
@@ -149,10 +150,10 @@ def main(argv):
         download_from_url(url, dist=os.path.join(download_dir, file_name.replace(':', '_')))
     elif type_download == 'artifacts':
         url_json = json.loads(url_json_string)
-        url = url_json['url']
-        cookie = url_json['cookie']
-        artifacts = ArtifactsUpdater(url, cookie)
+        print(url_json)
+        artifacts = ArtifactsUpdater(url_json)
 
+    # fixme: remove this
     os.system("pause")
 
 
