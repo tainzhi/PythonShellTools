@@ -1,10 +1,11 @@
-import os.path
+import time
 
 import requests
 import json
 from db import SqliteDB
 import asyncio
 import re
+import logging
 
 # todo add global DEBUG sign
 DEBUG = True
@@ -43,9 +44,10 @@ HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
 
 class ArtifactsUpdater:
     def __init__(self, config: dict):
+        logging.debug(config)
+        self.__is_loading = False
         self.__db = SqliteDB()
         self.__loaded_versions = self.__db.get_all_versions_list()
-
         self.__url = config['artifacts']['url']
         self.__cookie = config['artifacts']['cookie']
         self.__payload = {'type': 'root',
@@ -60,35 +62,40 @@ class ArtifactsUpdater:
             'Cookie': self.__cookie,
             'Host': 'artifacts-bjmirr.mot.com'
         }
-
         self.__search_repos(config)
 
-        # todo
-        # if self.__cookie.find('SESSION') == -1:
-        #     raise Exception('Cookie is not fully set')
-        # else:
-        #     asyncio.run(
-        #         self.__requests_root(self.__payload)
-        #     )
-
     def __search_repos(self, keys):
-        # fixme: remove
-        # select * from repos where url like '%eqs/12/S3SQ32.3/eqs_g%userdebug%test-keys%';
-        search_clause = '%{}%{}%{}%{}%userdebug%test-keys%'.format(keys['android_version'], keys['version'], keys['dist'],  keys['finger'])
         repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
         if len(repos) == 0:
             print("No repos found, updating first")
             # 从 eqs_g/oneli_cn 过滤出eqs/oneli
-            product_name_base = keys['product_'][0:keys['product_'].find('_')]
-            asyncio.run(
-                self.__requests_root(self.__payload, specified_product=product_name_base)
-            )
+            product_name_base = keys['product'][0:keys['product'].find('_')]
+            self.__check_login_status()
+            loop = asyncio.get_event_loop()
+            run_code = loop.run_until_complete(self.__requests_root(self.__payload, specified_product=product_name_base))
+            # asyncio.run(
+            #     self.__requests_root(self.__payload, specified_product=product_name_base)
+            # )
+            if run_code:
+                logging.info("search db after loading")
+                repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
+                print(repos)
         else:
+            logging.info("search db not need update")
             print(repos)
+
+    def __check_login_status(self):
+        # FIXME: add login function
+        if self.__cookie.find('SESSION') == -1:
+            excep = Exception('Cookie is not fully set')
+            logging.exception(excep)
+            raise excep
 
     # 默认更新所有的 product 的repos
     # 如果指定了 product，则更新指定 product 的repos
     async def __requests_root(self, payload: dict, specified_product=None):
+        self.__is_loading = True
+        logging.debug(specified_product)
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             # todo optimize notify mesage
@@ -109,12 +116,10 @@ class ArtifactsUpdater:
                 payloads.append(pl)
             else:
                 if item['repoKey'].find(specified_product) != -1:
-                    print('to update product: {} repos'.format(item['repoKey']))
+                    logging.info('to update product repo: %s', item['repoKey'])
                     pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
                           'repoType': item['repoType']}
                     payloads.append(pl)
-        if specified_product is not None:
-            print('{} repos to updated'.format(len(payloads)))
         task_list = []
         for pl in payloads:
             task = asyncio.create_task(
@@ -125,8 +130,10 @@ class ArtifactsUpdater:
         for i in results:
             ## FIXME: add to log
             ## print(i)
+            logging.info('insert %s items into db', len(i[0]))
             self.__db.bulk_insert_repo(i[0])
             self.__db.bulk_insert_release(i[1])
+        return True
 
     async def __requests(self, payload: dict):
         parent_path = payload['path']

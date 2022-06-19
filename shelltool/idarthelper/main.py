@@ -73,6 +73,7 @@ def download_from_url(url, headers=None, dist="idart.zip", is_bug2go=False):
         # https://blog.csdn.net/shykevin/article/details/105503594
         # https://rich.readthedocs.io/en/stable/progress.html
         req = requests.get(url, stream=True, headers=headers)
+        print(requests.head(url, headers=headers).headers)
         file_size = req.headers.get('Content-Length')
         logging.info("file size: ", convert_file_size(file_size))
         try:
@@ -146,6 +147,16 @@ def main(argv):
     elif type_download == 'artifacts':
         url_json = json.loads(url_json_string)
         artifacts = ArtifactsUpdater(url_json)
+        # FIXME: to download fastboot package 
+        # cookie = url_json['artifacts']['cookie']
+        # headers = {
+        #     'Cookie': cookie,
+        #     'host': 'artifacts-bjmirr.mot.com',
+        #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; xf64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
+        # }
+        # url='https://artifacts-bjmirr.mot.com/artifactory/hiphi/12/S1SH32.55-42-3/hiphi_g/userdebug/intcfg_test-keys/fastboot_hiphi_g_userdebug_12_S1SH32.55-42-3_3fb73-64a95_intcfg-test-keys_global_US.tar.gz'
+        # print(requests.head(url, headers=headers).headers)
+        # // fastboot 和 bug2go 支持 断点续传
 
     # fixme: remove this
     os.system("pause")

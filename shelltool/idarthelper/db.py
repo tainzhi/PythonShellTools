@@ -85,8 +85,6 @@ class SqliteDB:
             clause = "select url from {} where url like '%{}%userdebug%test-keys%'".format(DB_TABLE_REPO_NAME, version)
         if dist != '':
             clause = "select url from ({}) where url like '%{}%'".format(clause, dist)
-        # fixme: remove
-        print(clause)
         repos = cursor.execute(clause).fetchall()
         return repos
 
