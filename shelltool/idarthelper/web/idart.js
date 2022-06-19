@@ -142,7 +142,7 @@
                     // https://idart.mot.com/browse/IKSWS-114442  SW version:motorola/tundra_cn/tundra:12/SSJ32.56/eb623-236c3:user/release-keys
                     const user_content=$('.user-content-block').text()
                     if (user_content) {
-                        const bu_re = /(OS\/SW\s?Build:|Build:\s*|SW version:\s*|motorola)(.*)/
+                        const bu_re = /(OS\/SW\s?Build:|Build\s*:\s*|SW version:\s*|motorola)(.*)/
                         const bu = user_content.match(bu_re) 
                         if (bu) {
                             detailed_fastboot_version = bu[2]
@@ -152,7 +152,7 @@
                 }
             }
 
-            const pf_re = /[a-z0-9]{5,}-[a-z0-9]{5,}/
+            const pf_re = /([a-z0-9]{5,}-[a-z0-9]{5,})/
             const pf = detailed_fastboot_version.match(pf_re)
             // 找到 e9c75-a5f84
             if (pf) {
@@ -160,15 +160,17 @@
             }
             // https://idart.mot.com/browse/IKSWS-39920 OS/SWBuild: [motorola/hiphi_g/hiphi:12/S1SH32.21-10/b879b-cd136:user/release-keys]
             // https://idart.mot.com/browse/IKMMINTG-39536 12_S3SG32.5:userdebug
-            // 过滤出 S3SG32.5 或者有-的S1SH32.21-10
-            const vera_re = /[\s_\/]([a-z0-9A-Z]+?\.[a-z0-9A-Z\-]+?)[_\/:\s]?/
+            // 12_S3SJ32.1-11_0c6d18-3d7cd
+            // eqs_g_userdebug_12_S3SQ32.3_a60fc-d00bf_intcfg-test-keys_global_US
+            // motorola/smith_retail/smith:12/S2PS32.52/af3ed2-62871:userdebug/intcfg,test-keys
+            const vera_re = /[\s_\/]([a-z0-9A-Z]+?\.[a-z0-9A-Z]+(?:-\d{1,})*)[_\/:\s]?/
             const vera = detailed_fastboot_version.match(vera_re)
             if (vera) {
                 version = vera[1]
             }
 
             // 过滤出 11/12/13
-            const a_vera_re = /[\s_\/:](\d{2})[\s_\/]/
+            const a_vera_re = /[\s_\/:]?(\d{2})[\s_\/]/
             const a_vera = detailed_fastboot_version.match(a_vera_re)
             if (a_vera) {
                 android_version = a_vera[1]
@@ -190,8 +192,8 @@
                 "dist": dist,
                 "android_version": android_version,
                 "version": version,
-                "parse_from": parse_from_tag,
-                "finger": finger
+                "finger": finger,
+                "parse_from": parse_from_tag
             }
 
             GM_cookie('list', {
