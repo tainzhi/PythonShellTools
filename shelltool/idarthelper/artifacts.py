@@ -76,11 +76,19 @@ class ArtifactsUpdater:
         # select * from repos where url like '%eqs/12/S3SQ32.3/eqs_g%userdebug%test-keys%';
         search_clause = '%{}%{}%{}%{}%userdebug%test-keys%'.format(keys['android_version'], keys['version'], keys['dist'],  keys['finger'])
         repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
-        print(repos)
+        if len(repos) == 0:
+            print("No repos found, updating first")
+            # 从 eqs_g/oneli_cn 过滤出eqs/oneli
+            product_name_base = keys['product_'][0:keys['product_'].find('_')]
+            asyncio.run(
+                self.__requests_root(self.__payload, specified_product=product_name_base)
+            )
+        else:
+            print(repos)
 
-
-
-    async def __requests_root(self, payload: dict):
+    # 默认更新所有的 product 的repos
+    # 如果指定了 product，则更新指定 product 的repos
+    async def __requests_root(self, payload: dict, specified_product=None):
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             # todo optimize notify mesage
@@ -95,9 +103,18 @@ class ArtifactsUpdater:
             # not traverse directories like cypfg-cache, smith-cache
             if 'repoKey' in item and item['repoKey'].find('cache') != -1:
                 continue
-            pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
-                  'repoType': item['repoType']}
-            payloads.append(pl)
+            if specified_product is None:
+                pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
+                      'repoType': item['repoType']}
+                payloads.append(pl)
+            else:
+                if item['repoKey'].find(specified_product) != -1:
+                    print('to update product: {} repos'.format(item['repoKey']))
+                    pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
+                          'repoType': item['repoType']}
+                    payloads.append(pl)
+        if specified_product is not None:
+            print('{} repos to updated'.format(len(payloads)))
         task_list = []
         for pl in payloads:
             task = asyncio.create_task(
