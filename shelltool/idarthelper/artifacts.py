@@ -42,11 +42,12 @@ HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
 
 
 class ArtifactsUpdater:
-    def __init__(self, url: str, cookie: str):
+    def __init__(self, config: dict):
         self.__db = SqliteDB()
         self.__loaded_versions = self.__db.get_all_versions_list()
-        self.__url = url
-        self.__cookie = cookie
+
+        self.__url = config['artifacts']['url']
+        self.__cookie = config['artifacts']['cookie']
         self.__payload = {'type': 'root',
                           'path': '',
                           'repoType': 'remote',
@@ -60,9 +61,24 @@ class ArtifactsUpdater:
             'Host': 'artifacts-bjmirr.mot.com'
         }
 
-        asyncio.run(
-            self.__requests_root(self.__payload)
-        )
+        self.__search_repos(config)
+
+        # todo
+        # if self.__cookie.find('SESSION') == -1:
+        #     raise Exception('Cookie is not fully set')
+        # else:
+        #     asyncio.run(
+        #         self.__requests_root(self.__payload)
+        #     )
+
+    def __search_repos(self, keys):
+        # fixme: remove
+        # select * from repos where url like '%eqs/12/S3SQ32.3/eqs_g%userdebug%test-keys%';
+        search_clause = '%{}%{}%{}%{}%userdebug%test-keys%'.format(keys['android_version'], keys['version'], keys['dist'],  keys['finger'])
+        repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
+        print(repos)
+
+
 
     async def __requests_root(self, payload: dict):
         response = requests.post(self.__url, headers=self.__headers, json=payload)

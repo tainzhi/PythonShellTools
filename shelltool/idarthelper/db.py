@@ -66,16 +66,28 @@ class SqliteDB:
         versions = cursor.execute("SELECT version, product FROM {}".format(DB_TABLE_RELEASE_NAME)).fetchall()
         return dict((row[0], row[1]) for row in versions)
 
-    def __dict_factory(self, cursor, row):
-        d = {}
-        d.update({row[0] : row[1]})
-        return d
-
     def get_all_versions_list(self):
         self.__con.row_factory = lambda cursor, row: row[0]
         cursor = self.__con.cursor()
         versions = cursor.execute("SELECT version FROM {}".format(DB_TABLE_RELEASE_NAME)).fetchall()
         return set(versions)
+
+    def search_repos(self, version, dist, finger):
+        self.__con.row_factory = lambda cursor, row: row[0]
+        cursor = self.__con.cursor()
+        clause = ''
+        if version == '' and finger == '':
+            # FIXME: add to logger
+            print('version and finger are empty')
+        else:
+            version = version if version != '' else finger
+            clause = "select url from {} where url like '%{}%userdebug%test-keys%'".format(DB_TABLE_REPO_NAME, version)
+        if dist != '':
+            clause = "select url from ({}) where url like '%{}%'".format(clause, dist)
+        # fixme: remove
+        print(clause)
+        repos = cursor.execute(clause).fetchall()
+        return repos
 
     def close(self):
         self.__con.commit()
