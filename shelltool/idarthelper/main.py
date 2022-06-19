@@ -1,18 +1,13 @@
-import os
-import sys
+import logging
 import requests
 import json
 import subprocess
 from artifacts import ArtifactsUpdater
+from util import *
 
-# FIXME: compatility
-download_dir = r'd:\Downloads'
-DEBUG = True
 KB = 1024
 MB = KB * 1024
 GB = MB * 1024
-
-IS_WIN32 = 'win32' in str(sys.platform).lower()
 
 
 def get_path_stem(file_path):
@@ -32,9 +27,9 @@ def open_dir(dir_path):
         # ret = subprocess.Popen(['explorer', dir_path], startupinfo=startupinfo)
         ret = subprocess.call(['explorer', dir_path])
         if ret == 1:
-            print("open dir success")
+            pass
         else:
-            print("open dir failed")
+            logging.error("open dir failed")
     else:
         # todo compatible with linux/mac
         subprocess.run(['gnome-open', dir_path], check=True)
@@ -52,7 +47,7 @@ def untar(fname: str):
     # 解压到以去除文件后缀之后的目录作为解压目录
     # 取得无后缀路径
     if os.path.exists(path_stem):
-        print("已经解压好了," + path_stem)
+        logging.info("already untared to %s", path_stem)
     else:
         if not os.path.exists(path_stem):
             os.mkdir(path_stem)
@@ -61,26 +56,25 @@ def untar(fname: str):
             # todo compatible with linux/mac
             ret = subprocess.run(["tar", "-xvf", fname, "-C", path_stem], check=True)
             if ret.returncode == 0:
-                print("untar success")
+                logging.info("untar success to %s", path_stem)
             else:
-                print("untar failed")
+                logging.error("untar failed")
         except Exception as e:
-            print(e)
+            logging.exception(e)
             return False
     open_dir(path_stem)
 
 
-def download_from_url(url, headers=None, dist="idart.zip", payload=None):
+def download_from_url(url, headers=None, dist="idart.zip", is_bug2go=False):
     if os.path.exists(dist):
-        print("已经下载好了:" + dist)
+        logging.info("%s already downloaded to %s", "bug2go" if is_bug2go else "attachment", dist)
     else:
         # todo  添加progressbar
         # https://blog.csdn.net/shykevin/article/details/105503594
         # https://rich.readthedocs.io/en/stable/progress.html
         req = requests.get(url, stream=True, headers=headers)
-        print("headers:", req.headers)
         file_size = req.headers.get('Content-Length')
-        print("file size: ", convert_file_size(file_size))
+        logging.info("file size: ", convert_file_size(file_size))
         try:
             with(open(dist, 'wb')) as f:
                 for chunk in req.iter_content(chunk_size=1024):
@@ -88,9 +82,9 @@ def download_from_url(url, headers=None, dist="idart.zip", payload=None):
                         f.write(chunk)
                         f.flush()
         except Exception as e:
-            print(e)
+            logging.exception(e)
             return False
-    print("download success, begin untar")
+    logging.info("download success, begin untar")
     untar(dist)
 
 
@@ -122,7 +116,6 @@ def main(argv):
     # 传过来后, 再对编码后的json string进行url解码
     # 而且还需要取出末尾的反斜杠 /
     url_json_string = requests.utils.unquote(encoded_url_json_string).strip('/')
-    print(url_json_string)
     # download idart attachment
     if type_download == 'idart':
         # 解析json字符串
@@ -135,6 +128,7 @@ def main(argv):
             'host': 'idart.mot.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; xf64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
         }
+        logging.info("to download attachment from %s", url)
 
         # 下载文件
         download_from_url(url, headers=headers, dist=os.path.join(download_dir, id + '.zip'))
@@ -147,10 +141,10 @@ def main(argv):
         # 下载文件
         # 先去除目录路径中非法字符 : \ / * ? " < > |
         # reference: https://www.mtu.edu/umc/services/websites/writing/characters-avoid/
-        download_from_url(url, dist=os.path.join(download_dir, file_name.replace(':', '_')))
+        logging.info("to download bu2go from %s", url_json['host'])
+        download_from_url(url, dist=os.path.join(download_dir, file_name.replace(':', '_')), is_bug2go=True)
     elif type_download == 'artifacts':
         url_json = json.loads(url_json_string)
-        print(url_json)
         artifacts = ArtifactsUpdater(url_json)
 
     # fixme: remove this
@@ -158,5 +152,6 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    print(sys.argv[1])
+    Util.setup_log()
+    logging.debug(sys.argv[1])
     main(sys.argv[1:])

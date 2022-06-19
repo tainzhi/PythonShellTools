@@ -1,0 +1,53 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    simple:
+#        format: "%(asctime)s - %(module)s - %(funcName)s - %(message)s"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    error:
+        format: "%(asctime)s %(levelname)s <PID %(process)d:%(processName)s:%(threadName)s> %(name)s.%(module)s.%(funcName)s(): %(message)s"
+#        format: "%(asctime)s - %(name)s - %(levelname)s - %(threadName)s - %(module)s - %(funcName)s - %(message)s"
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+    info_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: simple
+        # fixme: to remove base dir D:/PythonShellTools/idarthelper/
+        # debug模式下从 regedit 启动, 会报错 C:\\WINDOWS\\system32\\log\\errors.log 没有找到
+        # release模式下, 生成 exe 后, 删除
+        filename: D:/PythonShellTools/shelltool/idarthelper/log/errors.log
+        maxBytes: 10485760
+        backupCount: 20
+        encoding: utf8
+    error_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: ERROR
+        formatter: simple
+        # fixme: to remove base dir D:/PythonShellTools/shelltool/idarthelper/
+        # debug模式下从 regedit 启动, 会报错 C:\\WINDOWS\\system32\\log\\errors.log 没有找到
+        # release模式下, 生成 exe 后, 删除
+        filename: D:/PythonShellTools/shelltool/idarthelper/log/errors.log
+        maxBytes: 10485760
+        backupCount: 20
+        encoding: utf8
+## path module logger
+#path:
+#    PathUtil:
+#        level: INFO
+#        handlers: [info_file_handler]
+#        propagate: no
+#    Util:
+#        level: INFO
+#        handlers: [info_file_handler]
+#        propagate: no
+
+# 默认logger
+root:
+    # fixme: 发布成release exe程序, level设置为INFO
+    level: DEBUG
+    handlers: [console,info_file_handler,error_file_handler]

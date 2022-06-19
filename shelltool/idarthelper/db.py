@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+# fixme: move this to util.py
 DB_NAME = 'artifacts.db'
 # TODO: use global user directory
 base_path = os.path.abspath(os.path.dirname(__file__))

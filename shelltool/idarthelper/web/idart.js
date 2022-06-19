@@ -291,6 +291,7 @@
             const decode_url = decodeURIComponent(url);
             const filename = new RegExp('filename=(.*?)&').exec(decode_url)[1]
             let url_json = {
+                "host": window.location.href,
                 "url": url,
                 "file_name": filename
             }
