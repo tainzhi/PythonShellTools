@@ -1,5 +1,8 @@
+import logging
 import sqlite3
 import os
+import shelve
+from util import Util
 
 # fixme: move this to util.py
 DB_NAME = 'artifacts.db'
@@ -8,6 +11,44 @@ base_path = os.path.abspath(os.path.dirname(__file__))
 DB_NAME = os.path.join(base_path, DB_NAME)
 DB_TABLE_REPO_NAME = 'repos'
 DB_TABLE_RELEASE_NAME = 'release_notes'
+
+KEY_USERNAME = "username"
+KEY_PASSWORD = "password"
+
+
+class Settings:
+    def __init__(self):
+        root_dir = Util.get_config_dir()
+        # 配置保存在./config/config.*中
+        config_name = 'config'
+        self.__path = os.path.join(root_dir, config_name)
+        self.__is_d_open = False
+
+    def __open(self):
+        if not self.__is_d_open:
+            self.__d = shelve.open(self.__path)
+            self.__is_d_open = True
+
+    def __close(self):
+        if self.__is_d_open:
+            self.__d.close()
+            self.__is_d_open = False
+
+    def set_username_password(self, username: str, password: str):
+        self.__open()
+        self.__d[KEY_USERNAME] = username
+        self.__d[KEY_PASSWORD] = password
+        self.__close()
+
+    def get_username_password(self):
+        self.__open()
+        try:
+            username = self.__d[KEY_USERNAME]
+            password = self.__d[KEY_PASSWORD]
+        except KeyError:
+            username = None
+            password = None
+        return username, password
 
 
 class SqliteDB:
@@ -54,7 +95,7 @@ class SqliteDB:
 
     def bulk_insert_release(self, release_notes):
         self.__cur.executemany("INSERT OR REPLACE INTO {} (url, product, version, detailed_version) VALUES (?, ?, ?, ?)"
-                           .format(DB_TABLE_RELEASE_NAME), release_notes)
+                               .format(DB_TABLE_RELEASE_NAME), release_notes)
         self.__con.commit()
 
     def get_all_versions_dict(self):

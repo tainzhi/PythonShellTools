@@ -1,14 +1,11 @@
-import time
-
 import requests
 import json
 from db import SqliteDB
 import asyncio
 import re
 import logging
+from db import Settings
 
-# todo add global DEBUG sign
-DEBUG = True
 EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks',
                  'banks-cache',
                  'bathena', 'bathena-cache', 'bingo', 'bingo-cache', 'borneo', 'borneo-cache', 'burton', 'burton-cache',
@@ -39,7 +36,8 @@ EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro',
                  'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache',
                  'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
                  }
-HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
+# TODO: custom hostname, not only artifacts-bjmirr.mot.com
+ARTIFACTS_HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
 
 
 class ArtifactsUpdater:
@@ -66,13 +64,14 @@ class ArtifactsUpdater:
 
     def __search_repos(self, keys):
         repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
-        if len(repos) == 0:
+        if True or len(repos) == 0:
             print("No repos found, updating first")
             # 从 eqs_g/oneli_cn 过滤出eqs/oneli
             product_name_base = keys['product'][0:keys['product'].find('_')]
             self.__check_login_status()
             loop = asyncio.get_event_loop()
-            run_code = loop.run_until_complete(self.__requests_root(self.__payload, specified_product=product_name_base))
+            run_code = loop.run_until_complete(
+                self.__requests_root(self.__payload, specified_product=product_name_base))
             # asyncio.run(
             #     self.__requests_root(self.__payload, specified_product=product_name_base)
             # )
@@ -87,9 +86,8 @@ class ArtifactsUpdater:
     def __check_login_status(self):
         # FIXME: add login function
         if self.__cookie.find('SESSION') == -1:
-            excep = Exception('Cookie is not fully set')
-            logging.exception(excep)
-            raise excep
+            logging.info('cookie is not fully set, need login')
+            self.__login_reset_headers()
 
     # 默认更新所有的 product 的repos
     # 如果指定了 product，则更新指定 product 的repos
@@ -172,7 +170,7 @@ class ArtifactsUpdater:
                       'repoType': item['repoType']}
                 payload_list.append(pl)
             else:
-                repo_url = HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
+                repo_url = ARTIFACTS_HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
                 repo_name = repoKeyWithoutSuffix
                 repo_detailed_version = item['path']
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
@@ -194,3 +192,29 @@ class ArtifactsUpdater:
             repos.extend(result[0])
             release_notes.extend(result[1])
         return repos, release_notes
+
+    def __login_reset_headers(self):
+        login_url = 'https://artifacts-bjmirr.mot.com/artifactory/ui/auth/login?_spring_security_remember_me=false'
+        settings = Settings()
+        username, password = settings.get_username_password()
+        if username is None or password is None:
+            username = input('Please input username:')
+            password = input('Please input password:')
+        settings.set_username_password(username, password)
+        payload = {'user': username, 'password': password, 'type': 'login'}
+        response = requests.post(login_url, headers=self.__headers, json=payload)
+        if response.status_code != 200:
+            logging.error("login failed: %s", response.text)
+            excep = Exception('Login failed!!!')
+            logging.exception(excep)
+            raise excep
+        else:
+            response_header = response.headers
+            set_cookie = response_header['Set-Cookie']
+            session = re.search("(SESSION=.*?);", set_cookie)
+            if session is not None:
+                self.__cookie = self.__cookie + '; ' + session.group(1)
+                self.__headers['Cookie'] = self.__cookie
+                logging.info('Login success, reset headers')
+            else:
+                logging.error('Login success, but get session failed')

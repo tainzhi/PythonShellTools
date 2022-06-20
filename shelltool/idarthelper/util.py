@@ -12,6 +12,9 @@ download_dir = r'd:\Downloads'
 
 IS_WIN32 = 'win32' in str(sys.platform).lower()
 
+# 对于支持断点续传的下载地址, 默认开启10个并行任务下载
+SEGMENT_DOWNLOAD_CHUNK = 5
+
 KB = 1024
 MB = KB * 1024
 GB = MB * 1024
@@ -46,6 +49,19 @@ class Util:
                 logging.config.dictConfig(cfg)
         else:
             logging.basicConfig(level=default_level)
+
+    @staticmethod
+    def get_config_dir():
+        """
+        配置保存目录 ./config/下
+        :return:
+        """
+        root_dir = Util.get_executable_path()
+        base_dir = 'config'
+        config_dir = os.path.join(root_dir, base_dir)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+        return config_dir
 
     @staticmethod
     def convert_file_size(file_size: int):
