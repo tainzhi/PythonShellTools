@@ -7,11 +7,15 @@ log_relative_dir = 'log'
 log_config_file = 'config.yaml'
 DEBUG = True
 
-
 # FIXME: compatility
 download_dir = r'd:\Downloads'
 
 IS_WIN32 = 'win32' in str(sys.platform).lower()
+
+KB = 1024
+MB = KB * 1024
+GB = MB * 1024
+
 
 class Util:
     @staticmethod
@@ -42,3 +46,17 @@ class Util:
                 logging.config.dictConfig(cfg)
         else:
             logging.basicConfig(level=default_level)
+
+    @staticmethod
+    def convert_file_size(file_size: int):
+        if file_size > GB:
+            size = float(file_size) / GB
+            return f"{size:.2f}G"
+        elif file_size > MB:
+            size = float(file_size) / MB
+            return f"{size:.2f}M"
+        elif file_size > KB:
+            size = float(file_size) / MB
+            return f"{size:.2f}K"
+        else:
+            return f"{file_size}B"

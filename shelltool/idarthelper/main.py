@@ -4,10 +4,7 @@ import json
 import subprocess
 from artifacts import ArtifactsUpdater
 from util import *
-
-KB = 1024
-MB = KB * 1024
-GB = MB * 1024
+from downloader import AsyncDownloader
 
 
 def get_path_stem(file_path):
@@ -68,40 +65,14 @@ def untar(fname: str):
 def download_from_url(url, headers=None, dist="idart.zip", is_bug2go=False):
     if os.path.exists(dist):
         logging.info("%s already downloaded to %s", "bug2go" if is_bug2go else "attachment", dist)
+        untar(dist)
     else:
-        # todo  添加progressbar
-        # https://blog.csdn.net/shykevin/article/details/105503594
-        # https://rich.readthedocs.io/en/stable/progress.html
-        req = requests.get(url, stream=True, headers=headers)
-        print(requests.head(url, headers=headers).headers)
-        file_size = req.headers.get('Content-Length')
-        logging.info("file size: ", convert_file_size(file_size))
-        try:
-            with(open(dist, 'wb')) as f:
-                for chunk in req.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-                        f.flush()
-        except Exception as e:
-            logging.exception(e)
-            return False
-    logging.info("download success, begin untar")
-    untar(dist)
-
-
-def convert_file_size(file_size: str):
-    size = int(file_size)
-    if size > GB:
-        size = (float)(file_size) / GB
-        return f"{size:.2f}G"
-    elif size > MB:
-        size = float(file_size) / MB
-        return f"{size:.2f}M"
-    elif size > KB:
-        size = float(file_size) / MB
-        return f"{size:.2f}K"
-    else:
-        return f"{size}B"
+        downloader = AsyncDownloader(url, headers, dist)
+        ret = downloader.request()
+        if ret:
+            logging.info("download success, begin untar")
+        else:
+            logging.error("download failed")
 
 
 def main(argv):
