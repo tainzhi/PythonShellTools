@@ -145,8 +145,8 @@
                         const bu_re = /(OS\/SW\s?Build:|Build\s*:\s*|SW version:\s*|motorola)(.*)/
                         const bu = user_content.match(bu_re) 
                         if (bu) {
-                            detailed_fastboot_version = bu[2]
-                            parse_from_tag = bu[2]
+                            detailed_fastboot_version = bu[0]
+                            parse_from_tag = bu[0]
                         }
                     }
                 }
@@ -163,7 +163,8 @@
             // 12_S3SJ32.1-11_0c6d18-3d7cd
             // eqs_g_userdebug_12_S3SQ32.3_a60fc-d00bf_intcfg-test-keys_global_US
             // motorola/smith_retail/smith:12/S2PS32.52/af3ed2-62871:userdebug/intcfg,test-keys
-            const vera_re = /[\s_\/]([a-z0-9A-Z]+?\.[a-z0-9A-Z]+(?:-\d{1,})*)[_\/:\s]?/
+            // https://idart.mot.com/browse/IKIMG-26237 S3SJ32.1-11
+            const vera_re = /[\s_\/]?([a-z0-9A-Z]+?\.[a-z0-9A-Z]+(?:-\d{1,})*)[_\/:\s]?/
             const vera = detailed_fastboot_version.match(vera_re)
             if (vera) {
                 version = vera[1]
