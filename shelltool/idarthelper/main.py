@@ -62,7 +62,7 @@ def untar(fname: str):
     open_dir(path_stem)
 
 
-def download_from_url(url, headers=None, dist="idart.zip", is_bug2go=False):
+def download_from_url(url, headers: dict, dist: str="idart.zip", is_bug2go=False):
     if os.path.exists(dist):
         logging.info("%s already downloaded to %s", "bug2go" if is_bug2go else "attachment", dist)
         untar(dist)
@@ -112,11 +112,18 @@ def main(argv):
         url_json = json.loads(url_json_string)
         url = url_json['url']
         file_name = url_json['file_name']
+        headers = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'accept-encoding': 'gzip, deflate, br',
+            'referer': 'https://mmibug2go.appspot.com/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; xf64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
+        }
         # 下载文件
         # 先去除目录路径中非法字符 : \ / * ? " < > |
         # reference: https://www.mtu.edu/umc/services/websites/writing/characters-avoid/
         logging.info("to download bu2go from %s", url_json['host'])
-        download_from_url(url, dist=os.path.join(download_dir, file_name.replace(':', '_')), is_bug2go=True)
+        download_from_url(url, headers=headers, dist=os.path.join(download_dir, file_name.replace(':', '_')),
+                          is_bug2go=True)
     elif type_download == 'artifacts':
         url_json = json.loads(url_json_string)
         artifacts = ArtifactsUpdater(url_json)

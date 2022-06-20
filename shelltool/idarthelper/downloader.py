@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import time
+
 import httpx
 import requests
-from util import Util
+from util import *
 
 
 class AsyncDownloader:
@@ -13,10 +15,13 @@ class AsyncDownloader:
 
     def request(self):
         try:
+            start = time.time()
             if self.__check_support_acceptrange():
                 self.__async_download()
             else:
                 self.__download()
+            end = time.time()
+            logging.info("download cost time(s): %s", end - start)
             return True
         except Exception as e:
             logging.exception(e)
@@ -68,12 +73,8 @@ class AsyncDownloader:
         loop.run_until_complete(asyncio.wait(tasks))
 
     async def __async_download_task(self, client, range_start, range_end):
-        if self.__headers is None:
-            headers = {'Range': 'bytes={}-{}'.format(range_start, range_end)}
-        else:
-            self.__headers['Range'] = f'bytes={range_start}-{range_end}'
-            headers = self.__headers
-        res = await client.get(self.__url, headers=headers)
+        self.__headers['Range'] = f'bytes={range_start}-{range_end}'
+        res = await client.get(self.__url, headers=self.__headers)
         with open(self.__filename, "rb+") as f:
             f.seek(range_start)
             f.write(res.content)
