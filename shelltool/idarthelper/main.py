@@ -71,7 +71,9 @@ def download_from_url(url, headers=None, dist="idart.zip", is_bug2go=False):
         ret = downloader.request()
         if ret:
             logging.info("download success, begin untar")
+            untar(dist)
         else:
+            os.remove(dist)
             logging.error("download failed")
 
 

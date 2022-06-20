@@ -16,7 +16,7 @@ class AsyncDownloader:
             if self.__check_support_acceptrange():
                 self.__async_download()
             else:
-                self.__download_file()
+                self.__download()
             return True
         except Exception as e:
             logging.exception(e)
@@ -32,7 +32,7 @@ class AsyncDownloader:
         if content_length is None:
             logging.error("content length is None")
         else:
-            self.__file_size = int(self.__content_length)
+            self.__file_size = int(content_length)
             formated_file_size = Util.convert_file_size(self.__file_size)
             logging.info("file size: %s", formated_file_size)
         if accept_range is None:
