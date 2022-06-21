@@ -5,6 +5,7 @@ import asyncio
 import re
 import logging
 from db import Settings
+from util import *
 
 EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks',
                  'banks-cache',
@@ -36,8 +37,6 @@ EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro',
                  'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache',
                  'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
                  }
-# TODO: custom hostname, not only artifacts-bjmirr.mot.com
-ARTIFACTS_HOST = 'https://artifacts-bjmirr.mot.com/artifactory'
 
 
 class ArtifactsUpdater:
@@ -58,7 +57,7 @@ class ArtifactsUpdater:
         self.__headers = {
             'Content-Type': 'application/json',
             'Cookie': self.__cookie,
-            'Host': 'artifacts-bjmirr.mot.com'
+            'Host': MIRROR_HOST
         }
 
         self.__fastboot_re = re.compile(r"fastboot_.*\.tar\.gz")
@@ -177,7 +176,8 @@ class ArtifactsUpdater:
                       'repoType': item['repoType']}
                 payload_list.append(pl)
             else:
-                repo_url = ARTIFACTS_HOST + '/' + repoKeyWithoutSuffix + '/' + item['path']
+                repo_url = 'https://artifacts-bjmirr.mot.com/artifactory' + '/' + repoKeyWithoutSuffix + '/' + item[
+                    'path']
                 repo_name = repoKeyWithoutSuffix
                 repo_detailed_version = item['path']
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
@@ -200,7 +200,7 @@ class ArtifactsUpdater:
         return repos, release_notes
 
     def __login_reset_headers(self):
-        login_url = 'https://artifacts-bjmirr.mot.com/artifactory/ui/auth/login?_spring_security_remember_me=false'
+        login_url = 'https://{}/artifactory/ui/auth/login?_spring_security_remember_me=false'.format(MIRROR_HOST)
         settings = Settings()
         username, password = settings.get_username_password()
         if username is None or password is None:

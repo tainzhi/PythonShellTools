@@ -10,6 +10,8 @@ DEBUG = True
 # FIXME: compatility
 download_dir = r'd:\Downloads'
 
+MIRROR_HOST = 'artifacts-bjmirr.mot.com'
+
 IS_WIN32 = 'win32' in str(sys.platform).lower()
 
 # 对于支持断点续传的下载地址, 默认开启10个并行任务下载
