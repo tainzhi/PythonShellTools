@@ -25,7 +25,7 @@ EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro',
                  'hawaii', 'hawaii_US', 'hawaiip', 'hawaiip_US', 'hawaiipl', 'hawaiipl_US', 'hawaiipll', 'hawaiipll_US',
                  'kane', 'kane-cache', 'kinzie', 'kinzie-cache', 'lake', 'lake-cache', 'lima', 'lima-cache', 'lux',
                  'lux-cache', 'malta', 'malta-cache',
-                 'maltalite', 'maltalite-cache', 'maltalsc', 'maltalsc-cache', 'maui', 'maui_US', 'maui_US-cache',
+                 'maltalite', 'maltalite-cache', 'maltalsc', 'maltalsc-cache',
                  'messi', 'messi_US', 'messi_US-cache',
                  'minsk', 'minsk-cache', 'modem', 'modem-cache', 'msi', 'msi-cache', 'nairo', 'nairo-cache', 'nio',
                  'nio-cache', 'ocean', 'ocean-cache',
@@ -37,6 +37,7 @@ EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro',
                  'test', 'test-cache', 'tmp_share', 'tools', 'troika', 'troika-cache', 'victara', 'victara-cache',
                  'wlss01_repo_creation_test', 'wlss01_repo_creation_test-cache'
                  }
+PRODUCT_VEST_DIST = {'tongal': 'maui'}
 
 
 class ArtifactsUpdater:
@@ -71,10 +72,14 @@ class ArtifactsUpdater:
     def __search_repos(self, keys):
         repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
         if True or len(repos) == 0:
-            print("No repos found, updating first")
+            logging.info("No repos found, updating first")
             # 从 eqs_g/oneli_cn 过滤出eqs/oneli
-            product_name_base = keys['product'][0:keys['product'].find('_')]
-            self.__check_login_status()
+            if keys['product'].find('_') != -1:
+                product_name_base = keys['product'][0:keys['product'].find('_')]
+            else:
+                product_name_base = keys['product']
+            if product_name_base in PRODUCT_VEST_DIST.keys():
+                product_name_base = PRODUCT_VEST_DIST[product_name_base]
             loop = asyncio.get_event_loop()
             run_code = loop.run_until_complete(
                 self.__requests_root(self.__payload, specified_product=product_name_base))
@@ -89,12 +94,6 @@ class ArtifactsUpdater:
             logging.info("search db not need update")
             print(repos)
 
-    def __check_login_status(self):
-        # FIXME: add login function
-        if self.__cookie.find('SESSION') == -1:
-            logging.info('cookie is not fully set, need login')
-            self.__login_reset_headers()
-
     # 默认更新所有的 product 的repos
     # 如果指定了 product，则更新指定 product 的repos
     async def __requests_root(self, payload: dict, specified_product=None):
@@ -103,9 +102,11 @@ class ArtifactsUpdater:
         response = requests.post(self.__url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             # todo optimize notify mesage
-            print('Connect artifacts site failed!!!')
-            print(response.text)
-            return
+            logging.error('Connect artifacts site failed!!! try first')
+            logging.error(response)
+            self.__login_reset_headers()
+            logging.info('request artifacts with new cookie')
+            response = requests.post(self.__url, headers=self.__headers, json=payload)
         response_json = json.loads(response.text)
         payloads = []
         for item in response_json:
@@ -132,8 +133,6 @@ class ArtifactsUpdater:
             task_list.append(task)
         results = await asyncio.gather(*task_list)
         for i in results:
-            ## FIXME: add to log
-            ## print(i)
             logging.info('insert %s items into db', len(i[0]))
             self.__db.bulk_insert_repo(i[0])
             self.__db.bulk_insert_release(i[1])
@@ -219,8 +218,11 @@ class ArtifactsUpdater:
             set_cookie = response_header['Set-Cookie']
             session = re.search("(SESSION=.*?);", set_cookie)
             if session is not None:
-                self.__cookie = self.__cookie + '; ' + session.group(1)
+                cookie_items = [item for item in self.__cookie.split(';') if item.find('SESSION') == -1]
+                self.__cookie = ';'.join(cookie_items) + ';' + session.group(1)
                 self.__headers['Cookie'] = self.__cookie
                 logging.info('Login success, reset headers')
             else:
-                logging.error('Login success, but get session failed')
+                excep = Exception('Login success, but reset headers failed')
+                logging.exception(excep)
+                raise excep
