@@ -60,6 +60,12 @@ class ArtifactsUpdater:
             'Cookie': self.__cookie,
             'Host': 'artifacts-bjmirr.mot.com'
         }
+
+        self.__fastboot_re = re.compile(r"fastboot_.*\.tar\.gz")
+        self.__release_notes_re = re.compile(r".*ReleaseNotes.html|msi-side_release_notes.*")
+        self.__repo_version_re = re.compile(r'(.*?/.*?)/.*')
+        self.__start_with_11_12_re = re.compile(r'\d\d.*')
+
         self.__search_repos(config)
 
     def __search_repos(self, keys):
@@ -151,9 +157,10 @@ class ArtifactsUpdater:
             # 1. 过滤掉android 10, 11
             if item['path'].find('10') == 0 or item['path'].find('11') == 0:
                 continue
-            # 2. 过滤掉 hawaiip_US 下 files/..., rhodep_US 下 S1SU32_rhodep-g_userdebug_mr_r-qsm2021_test-keys_continuous_gc/367
+            # 2. 过滤掉 hawaiip_US 下 files/...,  因为需要查找 hawappip/12/..., hawaiip/13/..., 而不是其他的 hawaiip/13/...
+            # 2.1. 过滤掉 rhodep_US 下 S1SU32_rhodep-g_userdebug_mr_r-qsm2021_test-keys_continuous_gc/367
             #    从开始index = 0搜索match
-            if not re.match('\d\d.*', item['path']):
+            if not re.match(self.__start_with_11_12_re, item['path']):
                 continue
             # 有的 repoKey='austin'下面的子目录中 repoKey='austin_US-cache'
             # 剔除-cache后缀
@@ -175,11 +182,10 @@ class ArtifactsUpdater:
                 repo_detailed_version = item['path']
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
                 # to   12/SSL32.9
-                repo_version = repoKeyWithoutSuffix + '/' + re.search('(.*?/.*?)/.*', item['path'])[1]
-                if re.search('.*ReleaseNotes.html', item['path']) or re.search('msi-side_release_notes.*',
-                                                                               item['path']):
+                repo_version = repoKeyWithoutSuffix + '/' + re.search(self.__repo_version_re, item['path'])[1]
+                if re.search(self.__release_notes_re, item['path']):
                     release_notes.append((repo_url, repo_name, repo_version, repo_detailed_version))
-                elif re.search('fastboot_' + '.*tar.gz', item['path']):
+                elif re.search(self.__fastboot_re, item['path']):
                     repos.append((repo_url, repo_name, repo_version, repo_detailed_version))
         task_list = []
         for pl in payload_list:
