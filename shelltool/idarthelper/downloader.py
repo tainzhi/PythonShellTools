@@ -16,7 +16,7 @@ class AsyncDownloader:
     def request(self):
         try:
             start = time.time()
-            if self.__check_support_acceptrange():
+            if self.__check_support_acceptrange() and SUPPORT_SEGMENT_DOWNLOAD:
                 self.__async_download()
             else:
                 self.__download()

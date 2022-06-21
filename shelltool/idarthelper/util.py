@@ -9,13 +9,15 @@ DEBUG = True
 
 # FIXME: compatility
 download_dir = r'd:\Downloads'
-
 MIRROR_HOST = 'artifacts-bjmirr.mot.com'
-
 IS_WIN32 = 'win32' in str(sys.platform).lower()
 
 # 对于支持断点续传的下载地址, 默认开启10个并行任务下载
-SEGMENT_DOWNLOAD_CHUNK = 5
+SEGMENT_DOWNLOAD_CHUNK = 10
+# 是否需要断点续传, 对于不支持断点续传的下载地址, 默认不开启断点续传
+# bug2go, artifacts支持断点续传
+# 开启后, 速度更快
+SUPPORT_SEGMENT_DOWNLOAD = True
 
 KB = 1024
 MB = KB * 1024
