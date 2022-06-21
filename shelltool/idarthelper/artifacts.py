@@ -64,6 +64,7 @@ class ArtifactsUpdater:
         self.__release_notes_re = re.compile(r".*ReleaseNotes.html|msi-side_release_notes.*")
         self.__repo_version_re = re.compile(r'(.*?/.*?)/.*')
         self.__start_with_11_12_re = re.compile(r'\d\d.*')
+        self.__repo_name_re = re.compile(r'[^\/]+[^\.]+$')
 
         self.__search_repos(config)
 
@@ -178,15 +179,14 @@ class ArtifactsUpdater:
             else:
                 repo_url = 'https://artifacts-bjmirr.mot.com/artifactory' + '/' + repoKeyWithoutSuffix + '/' + item[
                     'path']
-                repo_name = repoKeyWithoutSuffix
                 repo_detailed_version = item['path']
                 # from 12/SSL32.9/oneli_factory/userdebug/release-keys_cid255
                 # to   12/SSL32.9
                 repo_version = repoKeyWithoutSuffix + '/' + re.search(self.__repo_version_re, item['path'])[1]
                 if re.search(self.__release_notes_re, item['path']):
-                    release_notes.append((repo_url, repo_name, repo_version, repo_detailed_version))
+                    release_notes.append((repo_url, repo_version, repo_detailed_version))
                 elif re.search(self.__fastboot_re, item['path']):
-                    repos.append((repo_url, repo_name, repo_version, repo_detailed_version))
+                    repos.append((re.search(self.__repo_name_re, repo_url).group(0), repo_url, repo_version, repo_detailed_version))
         task_list = []
         for pl in payload_list:
             task = asyncio.create_task(
