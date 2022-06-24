@@ -289,6 +289,10 @@
     }
 
     function bug2go() {
+        var cookie;
+        GM_cookie('list', { url: location.href }, (cookies) => {
+            cookie = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+        });
 
         function download(url) {
             const decode_url = decodeURIComponent(url);
@@ -309,7 +313,14 @@
         function get_download_url() {
             // 获取标志 id
             const id = new RegExp('[0-9]*$').exec(document.location.href)[0]
-            const session_id = new RegExp('JSESSIONID=(.*?); ').exec(document.cookie)[1];
+            const jsession_re = /JSESSIONID=(\w*)/
+            const jsession_find = cookie.match(jsession_re)
+            if (jsession_find) {
+                var session_id = jsession_find[1]
+            } else {
+                GM_log("find no jsessionid, cookie : " + cookie)
+                return
+            }
 
             const getUrl = 'https://mmibug2go.appspot.com/_ah/api/bug2go/v1/bugReports/' +　id + '/downloadUrl?';
             GM_xmlhttpRequest({
@@ -317,7 +328,7 @@
                 method: "GET",
                 headers: {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
-                    cookie: document.cookie,
+                    cookie: cookie,
                     "x-bug2go-jsessionid": session_id,
                     Accept: '*/',
                     "Accept-Encoding": 'gzip,deflate,br',
