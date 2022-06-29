@@ -1,4 +1,6 @@
 import logging
+import os
+
 import requests
 import json
 import subprocess
@@ -58,6 +60,12 @@ def untar(fname: str):
                 logging.error("untar failed")
         except Exception as e:
             logging.exception(e)
+            logging.info("remove %s", fname)
+            if os.path.exists(fname):
+                os.remove(fname)
+            logging.info("remove %s", path_stem)
+            if os.path.exists(path_stem):
+                os.remove(path_stem)
             return False
     open_dir(path_stem)
 
