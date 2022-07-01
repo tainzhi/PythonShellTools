@@ -152,6 +152,17 @@
                 }
             }
 
+            // https://idart.mot.com/browse/IKSWS-133371
+            // 类似这样的, 只能从 Description 中获取product信息
+            // Build: motorola/smith_retail/smith:12/S2PS32.57-23/cefad9-1b941:userdebug/intcfg,test-keys
+            if (product.length == 0) {
+                const regex = /(?<=motorola\/)(.*?)[_\/:]/
+                const rf = detailed_fastboot_version.match(regex)
+                if (rf) {
+                    product = rf[1]
+                }
+            }
+
             const pf_re = /([a-z0-9]{5,}-[a-z0-9]{5,})/
             const pf = detailed_fastboot_version.match(pf_re)
             // 找到 e9c75-a5f84
