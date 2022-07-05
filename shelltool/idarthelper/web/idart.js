@@ -324,7 +324,9 @@
         function get_download_url() {
             // 获取标志 id
             const id = new RegExp('[0-9]*$').exec(document.location.href)[0]
-            const jsession_re = /JSESSIONID=(\w*)/
+            // https://mmibug2go.appspot.com/#/app/report/320287377
+            // 该网站的 jsessionid 中有 -
+            const jsession_re = /JSESSIONID=([\w-]*)/
             const jsession_find = cookie.match(jsession_re)
             if (jsession_find) {
                 var session_id = jsession_find[1]
@@ -350,7 +352,9 @@
                         const download_url = JSON.parse(response.responseText).downloadUrl;
                         download(download_url);
                     } else {
-                        GM_log("get download url failed: " + response.text);
+                        GM_log("jsession=" + session_id)
+                        GM_log("cookie=" + cookie)
+                        GM_log("get download url failed: " + response.response);
                     }
                 },
             });
