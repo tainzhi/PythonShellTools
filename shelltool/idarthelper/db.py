@@ -114,13 +114,26 @@ class SqliteDB:
         cursor = self.__con.cursor()
         clause = ''
         if version == '' and finger == '':
-            # FIXME: add to logger
-            print('version and finger are empty')
+            logging.error('version and finger are empty')
         else:
             version = version if version != '' else finger
             clause = "select name, url from {} where name like '%userdebug%{}%test-keys%'".format(DB_TABLE_REPO_NAME, version)
         if dist != '':
             clause = "select name, url from ({}) where name like '%{}%'".format(clause, dist)
+        repos = cursor.execute(clause).fetchall()
+        return repos
+
+    def get_latest_repos(self, product):
+        # FIXME: 在添加UI后, 提供更好的交互方式
+        """
+        获取最新的版本
+        :param product: eqs_g, eqs_cn or eqs_retail
+        :param product:
+        :return:
+        """
+        self.__con.row_factory = lambda cursor, row: (row[0], row[1])
+        cursor = self.__con.cursor()
+        clause = f"select name, url from {DB_TABLE_REPO_NAME} where name like '%{product}%userdebug%test-key%' order by version desc limit 2"
         repos = cursor.execute(clause).fetchall()
         return repos
 

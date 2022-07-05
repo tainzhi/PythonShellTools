@@ -70,29 +70,33 @@ class ArtifactsUpdater:
         self.__search_repos(config)
 
     def __search_repos(self, keys):
+        # 从 eqs_g/oneli_cn 过滤出eqs/oneli
+        if keys['product'].find('_') != -1:
+            product_name_base = keys['product'][0:keys['product'].find('_')]
+        else:
+            product_name_base = keys['product']
+        if product_name_base in PRODUCT_VEST_DIST.keys():
+            product_name_base = PRODUCT_VEST_DIST[product_name_base]
         repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
-        if True or len(repos) == 0:
+        if len(repos) == 0:
             logging.info("No repos found, updating first")
-            # 从 eqs_g/oneli_cn 过滤出eqs/oneli
-            if keys['product'].find('_') != -1:
-                product_name_base = keys['product'][0:keys['product'].find('_')]
-            else:
-                product_name_base = keys['product']
-            if product_name_base in PRODUCT_VEST_DIST.keys():
-                product_name_base = PRODUCT_VEST_DIST[product_name_base]
             loop = asyncio.get_event_loop()
             run_code = loop.run_until_complete(
                 self.__requests_root(self.__payload, specified_product=product_name_base))
+            # fixme: remove
             # asyncio.run(
             #     self.__requests_root(self.__payload, specified_product=product_name_base)
             # )
             if run_code:
                 logging.info("search db after loading")
                 repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
-                print(repos)
-        else:
-            logging.info("search db not need update")
-            print(repos)
+        print('---------------------target repo------------------------')
+        print(repos)
+        print('---------------------latest repos-----------------------')
+        latest_repo = self.__db.get_latest_repos(product_name_base)
+        for repo in latest_repo:
+            print('****' + repo[1])
+        print('--------------------------------------------------------')
 
     # 默认更新所有的 product 的repos
     # 如果指定了 product，则更新指定 product 的repos
