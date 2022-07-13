@@ -24,14 +24,16 @@ def open_dir(dir_path):
         # startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         # startupinfo.wShowWindow = subprocess.SW_HIDE
         # ret = subprocess.Popen(['explorer', dir_path], startupinfo=startupinfo)
-        ret = subprocess.call(['explorer', dir_path])
+        cmd = f'explorer {dir_path}'.split(' ')
+        ret = subprocess.call(cmd)
         if ret == 1:
             pass
         else:
             logging.error("open dir failed")
     else:
         # todo compatible with linux/mac
-        subprocess.run(['gnome-open', dir_path], check=True)
+        cmd = f'gnome-open {dir_path}'.split(' ')
+        subprocess.run(cmd, check=True)
         pass
 
 
@@ -53,7 +55,8 @@ def untar(fname: str):
 
         try:
             # todo compatible with linux/mac
-            ret = subprocess.run(["tar", "-xvf", fname, "-C", path_stem], check=True)
+            cmd = f'tar -xvf {fname} -C {path_stem}'.split(' ')
+            ret = subprocess.run(cmd, check=True)
             if ret.returncode == 0:
                 logging.info("untar success to %s", path_stem)
             else:
