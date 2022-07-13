@@ -50,6 +50,15 @@ class Settings:
             password = None
         return username, password
 
+    def clear_username_password(self):
+        self.__open()
+        try:
+            del self.__d[KEY_USERNAME]
+            del self.__d[KEY_PASSWORD]
+        except KeyError:
+            pass
+        self.__close()
+
 
 class SqliteDB:
     def __init__(self):

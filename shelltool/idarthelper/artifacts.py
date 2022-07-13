@@ -214,8 +214,9 @@ class ArtifactsUpdater:
         response = requests.post(login_url, headers=self.__headers, json=payload)
         if response.status_code != 200:
             logging.error("login failed: %s", response.text)
-            excep = Exception('Login failed!!!')
+            excep = Exception('Login failed!!!, ' + response.text)
             logging.exception(excep)
+            settings.clear_username_password()
             raise excep
         else:
             response_header = response.headers
