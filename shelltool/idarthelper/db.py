@@ -84,7 +84,7 @@ class SqliteDB:
                            .format(DB_TABLE_RELEASE_NAME))
 
     def insert_repo(self, name, url, version, detailed_version):
-        self.__cur.execute("INSERT OR REPLACE INTO {} VALUES (?, ?, ?, ?)".format(DB_TABLE_REPO_NAME),
+        self.__cur.execute("INSERT OR REPLACE INTO {}(name, url, version, detailed_version) VALUES (?, ?, ?, ?)".format(DB_TABLE_REPO_NAME),
                            (name, url, version, detailed_version))
         self.__con.commit()
 
@@ -94,7 +94,7 @@ class SqliteDB:
         self.__con.commit()
 
     def bulk_insert_repo(self, repos):
-        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?, ?)'.format(DB_TABLE_REPO_NAME), repos)
+        self.__cur.executemany('INSERT OR REPLACE INTO {} (name, url, version, detailed_version) VALUES(?, ?, ?, ?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
 
     def get_all_repo_urls(self):

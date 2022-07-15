@@ -93,7 +93,7 @@ class ArtifactsUpdater:
                 repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
         print('---------------------target repo------------------------')
         print(repos)
-        self.__print_latest_repos(product_name_base, keys['android_version'])
+        self.__print_latest_repos(product_name_base, keys['android_version'] if len(keys['android_version']) != 0 else '12')
 
     def __print_latest_repos(self, product_name_base, android_version="12"):
         """
