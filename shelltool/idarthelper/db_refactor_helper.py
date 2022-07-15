@@ -17,11 +17,11 @@ class OldDB:
         self.__cur = self.__con.cursor()
 
     def get_all_repos(self):
-        self.__cur.execute('SELECT * FROM ' + DB_TABLE_REPO_NAME)
+        self.__cur.execute(f"SELECT * FROM {DB_TABLE_REPO_NAME} where version not like '%_US%'")
         return self.__cur.fetchall()
 
     def get_all_release_notes(self):
-        self.__cur.execute('SELECT * FROM ' + DB_TABLE_RELEASE_NOTES_NAME)
+        self.__cur.execute(f"SELECT * FROM {DB_TABLE_RELEASE_NOTES_NAME} where version not like '%_US%'")
         return self.__cur.fetchall()
 
 
@@ -36,7 +36,8 @@ class NewDB:
                             (name TEXT PRIMARY KEY,
                            url TEXT,
                            version TEXT,
-                           detailed_version TEXT)'''
+                           detailed_version TEXT,
+                           build_date TEXT)'''
                            .format(DB_TABLE_REPO_NAME))
         self.__cur.execute('''CREATE TABLE IF NOT EXISTS {} 
                             (url TEXT PRIMARY KEY,
@@ -47,7 +48,7 @@ class NewDB:
                            .format(DB_TABLE_RELEASE_NOTES_NAME))
 
     def bulk_insert_repo(self, repos):
-        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?,?)'.format(DB_TABLE_REPO_NAME), repos)
+        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?, ?, ?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
 
     def bulk_insert_release(self, release_notes):
@@ -64,12 +65,12 @@ def main():
     # 过滤出 fastboot_oneli_cn_userdebug_12_S3SL32.5_b05136-e745f_intcfg-test-keys_china_CN.tar.gz
     name_re = re.compile(r'[^\/]+[^\.]+$')
     for repo in repos:
-        new_repos.append((re.search(name_re, repo[0]).group(0), repo[0], repo[2], repo[3]))
+        new_repos.append((repo[0], repo[1], repo[2], repo[3], "2020-01-01 00:00:00"))
 
     new_release_notes = []
     release_notes = oldDb.get_all_release_notes()
     for note in release_notes:
-        new_release_notes.append((note[0], note[2], note[3]))
+        new_release_notes.append((note[0], note[1], note[2]))
 
     newDb = NewDB()
     newDb.bulk_insert_repo(new_repos)

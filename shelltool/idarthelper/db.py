@@ -69,10 +69,11 @@ class SqliteDB:
     def __create(self):
         # Create table
         self.__cur.execute('''CREATE TABLE IF NOT EXISTS {} 
-                        (name TEXT PRIMARY KEY,
+                       (name TEXT PRIMARY KEY,
                        url TEXT,
                        version TEXT,
-                       detailed_version TEXT)'''
+                       detailed_version TEXT,
+                       build_date TEXT)'''
                            .format(DB_TABLE_REPO_NAME))
         self.__cur.execute('''CREATE TABLE IF NOT EXISTS {} 
                         (url TEXT PRIMARY KEY,
@@ -87,8 +88,13 @@ class SqliteDB:
                            (name, url, version, detailed_version))
         self.__con.commit()
 
+    def update_repo_build_date(self, product_base, android_version, image_version, build_date):
+        # version like berlin/11/RRG31.9
+        self.__cur.execute(f"UPDATE {DB_TABLE_REPO_NAME} SET build_date = '{build_date}' WHERE version LIKE '{product_base}%{android_version}%{image_version}%'")
+        self.__con.commit()
+
     def bulk_insert_repo(self, repos):
-        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?,?)'.format(DB_TABLE_REPO_NAME), repos)
+        self.__cur.executemany('INSERT OR REPLACE INTO {} VALUES(?, ?, ?, ?)'.format(DB_TABLE_REPO_NAME), repos)
         self.__con.commit()
 
     def get_all_repo_urls(self):
@@ -140,9 +146,9 @@ class SqliteDB:
         :param product:
         :return:
         """
-        self.__con.row_factory = lambda cursor, row: (row[0], row[1])
+        self.__con.row_factory = lambda cursor, row: (row[0], row[1], row[2])
         cursor = self.__con.cursor()
-        clause = f"select name, url from {DB_TABLE_REPO_NAME} where name like '%{product}%userdebug%test-key%' order by version desc limit 2"
+        clause = f"select name, url, build_date from {DB_TABLE_REPO_NAME} where name like '%{product}%userdebug%test-key%' order by build_date desc limit 6"
         repos = cursor.execute(clause).fetchall()
         return repos
 

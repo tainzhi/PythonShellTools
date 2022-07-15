@@ -5,6 +5,7 @@ import asyncio
 import re
 import logging
 from db import Settings
+from datetime import datetime, timedelta
 from util import *
 
 EXCLUDE_REPOS = {'amps', 'amps-cache', 'apps', 'apps-cache', 'archive', 'astro', 'astro-archive', 'banks',
@@ -92,10 +93,51 @@ class ArtifactsUpdater:
                 repos = self.__db.search_repos(keys['version'], keys['dist'], keys['finger'])
         print('---------------------target repo------------------------')
         print(repos)
+        self.__print_latest_repos(product_name_base, keys['android_version'])
+
+    def __print_latest_repos(self, product_name_base, android_version="12"):
+        """
+        fixme: to display in UI
+        从 https://artifacts-bjmirr.mot.com/artifactory/webapp/#/home 获取的json数据中没有各个 repo image的构建时间
+        所以需要从 https://artifacts-bjmirr.mot.com/artifactory/list/smith/12/ 类似的网址中获取 repo 各个版本的构建时间
+
+        S3SG32.11/      21-Jun-2022 11:40    -
+        S3SG32.12/->        -    -
+        S3SG32.13/      23-Jun-2022 12:04    -
+        S3SG32.14/      24-Jun-2022 12:33    -
+
+        只获取过去15天的构建的版本, 然后更新数据库
+        从数据库中获取最新的 6 个版本, 并输出
+
+        :param product_name_base: smith
+        :param version: 12
+        :return:
+        """
+        url = f'https://{MIRROR_HOST}/artifactory/list/{product_name_base}/{android_version}/'
+        response = requests.get(url, headers=self.__headers)
+        if response.status_code != 200:
+            logging.error(f"{url} request failed, status code: {response.status_code} {response.text}")
+            # 登录失败, 重新登录
+            self.__login_reset_headers()
+            # 重新遍历
+            self.__print_latest_repos(product_name_base, android_version)
+            return
+        else:
+            # 遍历过滤出 image版本号 - 构建时间
+            regex = r"<.*?>(.*)\/<.*>.*(\d{2}\-\w{3,}\-\d{4}\s\d{2}:\d{2})"
+            matches = re.findall(regex, response.text, re.MULTILINE)
+            until_half_month_ago = datetime.today() - timedelta(days=15)
+            for match in matches:
+                image_version = match[0]
+                build_date_time = match[1]
+                build_date = datetime.strptime(build_date_time, "%d-%b-%Y %H:%M")
+                # 只更新过去15天的版本
+                if build_date > until_half_month_ago:
+                    self.__db.update_repo_build_date(product_name_base, android_version, image_version, build_date)
         print('---------------------latest repos-----------------------')
         latest_repo = self.__db.get_latest_repos(product_name_base)
         for repo in latest_repo:
-            print('****' + repo[1])
+            print(f'{repo[2]}\t{repo[1]}\n')
         print('--------------------------------------------------------')
 
     # 默认更新所有的 product 的repos
@@ -114,10 +156,15 @@ class ArtifactsUpdater:
         response_json = json.loads(response.text)
         payloads = []
         for item in response_json:
+            # 1. 一些老项目不再使用, 排除掉
             if 'repoKey' in item and item['repoKey'] in EXCLUDE_REPOS:
                 continue
+            # 2. cache的项目, 排除掉. 因为cache的项目都可以在非cache的item中找到
             # not traverse directories like cypfg-cache, smith-cache
             if 'repoKey' in item and item['repoKey'].find('cache') != -1:
+                continue
+            # 3. _US 的项目, 排除掉. 因为_US的项目都可以在非_US的item中找到, 比如 _g的image
+            if 'repoKey' in item and item['repoKey'].find('_US') != -1:
                 continue
             if specified_product is None:
                 pl = {'type': 'junction', 'path': item['path'], 'text': item['text'], 'repoKey': item['repoKey'],
@@ -189,7 +236,8 @@ class ArtifactsUpdater:
                 if re.search(self.__release_notes_re, item['path']):
                     release_notes.append((repo_url, repo_version, repo_detailed_version))
                 elif re.search(self.__fastboot_re, item['path']):
-                    repos.append((re.search(self.__repo_name_re, repo_url).group(0), repo_url, repo_version, repo_detailed_version))
+                    repos.append((re.search(self.__repo_name_re, repo_url).group(0), repo_url, repo_version,
+                                  repo_detailed_version))
         task_list = []
         for pl in payload_list:
             task = asyncio.create_task(
@@ -203,6 +251,10 @@ class ArtifactsUpdater:
         return repos, release_notes
 
     def __login_reset_headers(self):
+        """
+        输入用户名和密码, 进行登录, 获取cookie, 并重新设置 headers
+        :return:
+        """
         login_url = 'https://{}/artifactory/ui/auth/login?_spring_security_remember_me=false'.format(MIRROR_HOST)
         settings = Settings()
         username, password = settings.get_username_password()
